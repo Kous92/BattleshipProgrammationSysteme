@@ -97,6 +97,22 @@ void afficherGrille(int **grille)
 				printf(" - ");
 				break;
 
+				case 1:
+				printf(" C ");
+				break;
+
+				case 2:
+				printf(" B ");
+				break;
+
+				case 3:
+				printf(" S ");
+				break;
+
+				case 4:
+				printf(" D ");
+				break;
+
 				default:
 				printf(" - ");
 				break;
@@ -107,18 +123,36 @@ void afficherGrille(int **grille)
 	}
 }
 
-void lancerBateaux(int **ships, int **grille)
+int **placerBateauxAleatoirement(Bateau *bateaux, int **grille)
 {
 	int i, j, x, y;
-	int direction; // Vertical ou horizontal
+	int direction = -1; // Vertical ou horizontal
 
-	bool ok = FALSE;
-	int rand()
+	boolean ok = FALSE;
 
-	for (i = 0; i < 5; i++)
+	Coordonnees position;
+
+	for (i = 0; i < 5; i++) 
 	{
+		ok = FALSE;
 
+		while (ok == FALSE) 
+		{
+			direction = nombreAleatoire(0, 1); /* 0 -> horizontal, 1 -> vertical */
+			printf(">>> Direction = %d\n", direction);
+
+			position = genererPosition(direction, bateaux[i].longueur_bateau);
+
+			if (validerPlacementBateaux(grille, position, direction, bateaux[i].longueur_bateau))
+			{
+				ok = TRUE;
+			}
+		}
+
+		grille = placerBateau(grille, bateaux[i], position, direction);
 	}
+
+	return grille;
 }
 
 boolean validerPlacementBateaux(int **grille, Coordonnees position, int direction, int longueur_bateau)
@@ -127,7 +161,7 @@ boolean validerPlacementBateaux(int **grille, Coordonnees position, int directio
 	boolean valide = TRUE;
 	Symbole symbole;
 
-	for (i = 0; valide && i < length; i++) 
+	for (i = 0; valide && i < longueur_bateau; i++) 
 	{
 		if (direction == 0) 
 		{
@@ -144,11 +178,33 @@ boolean validerPlacementBateaux(int **grille, Coordonnees position, int directio
 			}
 		}
 	}
+
+	return valide;
+}
+
+int **placerBateau(int **grille, Bateau bateau, Coordonnees position, int direction)
+{
+	int i;
+
+	for (i = 0; i < bateau.longueur_bateau; i++) 
+	{
+		if (direction == 0) 
+		{
+			grille[position.x][position.y + i] = bateau.symbole;
+		}
+		else 
+		{
+			grille[position.x + i][position.y] = bateau.symbole;
+		}			
+	}
+
+	return grille;
 }
 
 int nombreAleatoire(int min, int max)
 {
-	int n = rand() % (max - min) + min;
+	srand(time(NULL));
+	nombreMystere = (rand() % (MAX - MIN + 1)) + MIN;
 
 	return n;
 }
@@ -161,12 +217,14 @@ Coordonnees genererPosition(int direction, int longueur_bateau)
 	if (direction == 0) 
 	{
 		position.x = nombreAleatoire(0, 10);
-		position.y = nombreAleatoire(0, 10 - length);
+		position.y = nombreAleatoire(0, 10 - longueur_bateau);
+		printf("Horizontal: x = %d, y = %d\n", position.x, position.y);
 	} 
 	else 
 	{
-		position.x = nombreAleatoire(0, 10 - length);
+		position.x = nombreAleatoire(0, 10 - longueur_bateau);
 		position.y = nombreAleatoire(0, 10);
+		printf("Vertical: x = %d, y = %d\n", position.x, position.y);
 	}
 
 	return position;
