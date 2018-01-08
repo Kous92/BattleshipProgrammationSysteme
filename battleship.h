@@ -9,7 +9,7 @@ typedef enum
 
 /*=========================================================================
   Valeurs des case de la grille
-  - 1: Cible ratée ==> 'X'
+  - -1: Cible ratée ==> 'X'
   - 0: Eau ==> '-'
   - 1: Porte-avions (5 cases) ==> 'C' (Carrier)
   - 2: Croiseur (4 cases) ==> 'B' (Battleship)
@@ -19,6 +19,7 @@ typedef enum
   - 6: Croiseur touché ==> 'b'
   - 7: Sous-marin touché ==> 's'
   - 8: Torpilleur touché ==> 'd'
+  - 9: Cible touchée ==> '*'
   =========================================================================*/
 typedef enum
 {
@@ -44,16 +45,41 @@ typedef struct Bateau
 {
 	int longueur_bateau;
 	int symbole;
+	boolean touche;
 } Bateau;
+
+typedef struct Joueur
+{
+	Bateau *bateaux;
+	int nombre_bateaux;
+	int **grille;
+	int **grille_attaque;
+	int joueur;
+} Joueur;
 
 // Fonction de mise en pause
 void pause();
+void viderBuffer();
+
+// Gestion de la grille
 int **initialiserGrille();
 void afficherGrille(int **grille);
+void afficherGrillesJeu(int **grille, int **grille_attaque);
+
+// Gestion des bateaux
 int **placerBateauxAleatoirement(Bateau *bateaux, int **grille);
 int **placerBateau(int **grille, Bateau bateau, Coordonnees position, int direction);
 boolean validerPlacementBateaux(int **grille, Coordonnees position, int direction, int longueur_bateau);
+
+// Joueurs
+Joueur initialiserJoueur(int joueur);
+void afficherStatistiquesJoueur(Joueur j);
+
+// Coordonnées,...
 int nombreAleatoire(int min, int max);
 Coordonnees genererPosition(int direction, int longueur_bateau);
+Coordonnees definirCible();
+char *saisirCible();
+boolean verifierChaine(char *chaine);
 
 #endif

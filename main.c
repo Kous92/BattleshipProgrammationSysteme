@@ -7,27 +7,14 @@ int main(void)
 {
 	system("clear");
 
-	int **grille = initialiserGrille();
-	afficherGrille(grille);
-	
-	Bateau *bateaux = (Bateau *) malloc(5 *sizeof(Bateau));
+	Joueur j1 = initialiserJoueur(1);
+	// afficherGrillesJeu(j1.grille, j1.grille_attaque);
 
-	bateaux[0].longueur_bateau = 5;
-	bateaux[0].symbole = 1;
-	bateaux[1].longueur_bateau = 4;
-	bateaux[1].symbole = 2;
-	bateaux[2].longueur_bateau = 3;
-	bateaux[2].symbole = 3;
-	bateaux[3].longueur_bateau = 3;
-	bateaux[3].symbole = 3;
-	bateaux[4].longueur_bateau = 2;
-	bateaux[4].symbole = 4;
-	
-	grille = placerBateauxAleatoirement(bateaux, grille);
-	printf("\n");
-	afficherGrille(grille);
+	j1.grille = placerBateauxAleatoirement(j1.bateaux, j1.grille);
+	afficherGrillesJeu(j1.grille, j1.grille_attaque);
+	afficherStatistiquesJoueur(j1);
 
-	free(bateaux);
+	definirCible();
 
 	return 0;
 }
