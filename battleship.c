@@ -155,7 +155,7 @@ void afficherGrille(int **grille)
 				break;
 
 				// Cible touchée
-				case 10:
+				case 9:
 				printf(" * ");
 				break;
 
@@ -280,7 +280,7 @@ void afficherGrillesJeu(int **grille, int **grille_attaque)
 				break;
 
 				// Cible touchée
-				case 10:
+				case 9:
 				printf(" * ");
 				break;
 
@@ -348,7 +348,7 @@ void afficherGrillesJeu(int **grille, int **grille_attaque)
 				break;
 
 				// Cible touchée
-				case 10:
+				case 9:
 				printf(" * ");
 				break;
 
@@ -364,9 +364,32 @@ void afficherGrillesJeu(int **grille, int **grille_attaque)
 	printf("\n");
 }
 
-int **placerBateauxAleatoirement(Bateau *bateaux, int **grille)
+int **mettreAJourGrille(int **grille, Coordonnees cible, boolean attaque)
 {
-	int i, j, x, y;
+	switch (attaque)
+	{
+		// Cible touchée
+		case TRUE:
+		grille[cible.x - 1][cible.y - 1] = 9;
+		// printf("* (%d, %d)", (cible.x - 1), (cible.y - 1));
+		break;
+
+		case FALSE:
+		grille[cible.x - 1][cible.y - 1] = -1;
+		// printf("X (%d, %d)", (cible.x - 1), (cible.y - 1));
+		break;
+
+		default:
+		break;
+	}
+
+	return grille;
+}
+
+void placerBateauxAleatoirement(Joueur *joueur)
+{
+	int i = 0, j = 0, k = 0;
+	int x, y;
 	int direction = -1; // Vertical ou horizontal
 
 	boolean ok = FALSE;
@@ -384,18 +407,51 @@ int **placerBateauxAleatoirement(Bateau *bateaux, int **grille)
 			direction = nombreAleatoire(0, 1); /* 0 -> horizontal, 1 -> vertical */
 			// printf(">>> Direction = %d\n", direction);
 
-			position = genererPosition(direction, bateaux[i].longueur_bateau);
+			// printf(">>> Bateau %d, longueur %d\n", (i + 1), joueur->bateaux[i].longueur_bateau);
 
-			if (validerPlacementBateaux(grille, position, direction, bateaux[i].longueur_bateau))
+			position = genererPosition(direction, joueur->bateaux[i].longueur_bateau);
+			// printf(">>> Position = (%d, %d)\n", position.x, position.y);
+
+			if (validerPlacementBateaux(joueur->grille, position, direction, joueur->bateaux[i].longueur_bateau))
 			{
 				ok = TRUE;
 			}
 		}
 
-		grille = placerBateau(grille, bateaux[i], position, direction);
+		if ((joueur->grille == NULL) || (joueur->bateaux == NULL))
+		{
+			exit(0);
+		}
+
+		joueur->grille = placerBateau(joueur->grille, joueur->bateaux[i], position, direction);
+
+		// Enregistrement des coordonnées du bateau du joueur;
+		// printf("Enregistrement des coordonnees du bateau %d (longueur %d)\n", (i + 1), joueur->bateaux[i].longueur_bateau);
+
+		for (j = 0; j < joueur->bateaux[j].longueur_bateau; j++)
+		{
+			if (direction == 0)
+			{
+				joueur->bateaux[i].coordonnees[j].x = position.x;
+				joueur->bateaux[i].coordonnees[j].y = position.y + j;
+				// printf("Horizontal: (%d, %d)\n", joueur->bateaux[i].coordonnees[j].x, joueur->bateaux[i].coordonnees[j].y);
+			}
+			else
+			{
+				joueur->bateaux[i].coordonnees[j].x = (position.x + j);
+				joueur->bateaux[i].coordonnees[j].y = position.y;
+				// printf("Vertical: (%d, %d)\n", joueur->bateaux[i].coordonnees[j].x, joueur->bateaux[i].coordonnees[j].y);
+			}
+			
+			joueur->bateaux[i].degats[j] = FALSE;
+			// printf(" -> Dégâts: %d\n", joueur->bateaux[i].degats[j]);
+		}
+
+		// pause();
+		
 	}
 
-	return grille;
+	// return joueur->grille;
 }
 
 boolean validerPlacementBateaux(int **grille, Coordonnees position, int direction, int longueur_bateau)
@@ -403,6 +459,8 @@ boolean validerPlacementBateaux(int **grille, Coordonnees position, int directio
 	int i;
 	boolean valide = TRUE;
 	Symbole symbole;
+
+	// printf("Validation...");
 
 	for (i = 0; valide && i <= longueur_bateau; i++) 
 	{
@@ -422,6 +480,15 @@ boolean validerPlacementBateaux(int **grille, Coordonnees position, int directio
 		}
 	}
 
+	if (valide == FALSE)
+	{
+		// printf("ERREUR\n");
+	}
+	else
+	{
+		// printf("OK\n");
+	}
+
 	return valide;
 }
 
@@ -429,14 +496,18 @@ int **placerBateau(int **grille, Bateau bateau, Coordonnees position, int direct
 {
 	int i;
 
+	// printf("Placement... Bateau longueur %d\n", bateau.longueur_bateau);
+
 	for (i = 0; i < bateau.longueur_bateau; i++) 
 	{
 		if (direction == 0) 
 		{
+			// printf("Horizontal: (%d, %d)\n", position.x, (position.y + i));
 			grille[position.x][position.y + i] = bateau.symbole;
 		}
 		else 
 		{
+			// printf("Vertical: (%d, %d)\n", (position.x + i), position.y);
 			grille[position.x + i][position.y] = bateau.symbole;
 		}			
 	}
@@ -447,6 +518,7 @@ int **placerBateau(int **grille, Bateau bateau, Coordonnees position, int direct
 Joueur initialiserJoueur(int joueur)
 {
 	Joueur j;
+	int i;
 
 	j.grille = initialiserGrille();
 	j.grille_attaque = initialiserGrille();
@@ -460,27 +532,54 @@ Joueur initialiserJoueur(int joueur)
 	j.bateaux[0].longueur_bateau = 5;
 	j.bateaux[0].symbole = 1;
 	j.bateaux[0].touche = FALSE;
+	j.bateaux[0].coordonnees = (Coordonnees *) malloc(5 *sizeof(Coordonnees));
+	j.bateaux[0].degats = (boolean *) malloc(5 *sizeof(boolean));
+	j.bateaux[0].nom = "Porte-avions";
 
 	// Croiseur (Battleship)
 	j.bateaux[1].longueur_bateau = 4;
 	j.bateaux[1].symbole = 2;
 	j.bateaux[1].touche = FALSE;
+	j.bateaux[1].coordonnees = (Coordonnees *) malloc(4 *sizeof(Coordonnees));
+	j.bateaux[1].degats = (boolean *) malloc(4 *sizeof(boolean));
+	j.bateaux[1].nom = "Croiseur";
 
 	// Sous-marin (submarine)
 	j.bateaux[2].longueur_bateau = 3;
 	j.bateaux[2].symbole = 3;
 	j.bateaux[2].touche = FALSE;
+	j.bateaux[2].coordonnees = (Coordonnees *) malloc(3 *sizeof(Coordonnees));
+	j.bateaux[2].degats = (boolean *) malloc(3 *sizeof(boolean));
+	j.bateaux[2].nom = "Sous-marin";
+
 	j.bateaux[3].longueur_bateau = 3;
 	j.bateaux[3].symbole = 3;
 	j.bateaux[3].touche = FALSE;
+	j.bateaux[3].coordonnees = (Coordonnees *) malloc(3 *sizeof(Coordonnees));
+	j.bateaux[3].degats = (boolean *) malloc(3 *sizeof(boolean));
+	j.bateaux[3].nom = "Sous-marin";
 
 	// Torpilleur (destroyer)
 	j.bateaux[4].longueur_bateau = 2;
 	j.bateaux[4].symbole = 4;
 	j.bateaux[4].touche = FALSE;
+	j.bateaux[4].coordonnees = (Coordonnees *) malloc(2 *sizeof(Coordonnees));
+	j.bateaux[4].degats = (boolean *) malloc(2 *sizeof(boolean));
+	j.bateaux[4].nom = "Torpilleur";
 
 	j.nombre_bateaux = 5;
 	j.joueur = joueur;
+
+	for (i = 0; i < 5; i++)
+	{
+		if ((j.grille == NULL) || (j.bateaux == NULL) || (j.bateaux[i].coordonnees == NULL) || (j.bateaux[i].degats == NULL))
+		{
+			exit(0);
+		}
+	}
+
+	// j.grille = placerBateauxAleatoirement(&j.bateaux, j.grille);
+	afficherGrillesJeu(j.grille, j.grille_attaque);
 
 	return j;
 }
@@ -525,6 +624,58 @@ void afficherStatistiquesJoueur(Joueur j)
 	printf(" * Torpilleurs: %d\n\n", torpilleurs);
 }
 
+void mettreAJourBateauxJoueur(Joueur *joueur, Coordonnees position)
+{
+	int i, j;
+	int attaques_restantes = 0;
+
+	for (i = 0; i < joueur->nombre_bateaux; i++)
+	{
+
+		for (j = 0; j < joueur->bateaux[i].longueur_bateau; j++)
+		{	
+			// Bateau touché
+			if ((joueur->bateaux[i].coordonnees[j].x == (position.x - 1)) && (joueur->bateaux[i].coordonnees[j].y == (position.y - 1)))
+			{
+				printf("%s touché: (%d, %d)\n", joueur->bateaux[i].nom, joueur->bateaux[i].coordonnees[j].x, joueur->bateaux[i].coordonnees[j].y);
+				joueur->bateaux[i].degats[j] = TRUE;
+
+				attaques_restantes = joueur->bateaux[i].longueur_bateau - nombreAttaqueSurBateaux(joueur->bateaux[i].degats);
+				
+				if (attaques_restantes == 0)
+				{
+					printf("%s détruit\n", joueur->bateaux[i].nom);
+				} 
+				else
+				{
+					printf("Encore %d fois pour détruire le %s\n", joueur->bateaux[i].longueur_bateau - nombreAttaqueSurBateaux(joueur->bateaux[i].degats), joueur->bateaux[i].nom);
+				}
+			}
+		}	
+	}
+}
+
+void mettreAJourStatistiquesJoueur(Joueur *j)
+{
+
+}
+
+int nombreAttaqueSurBateaux(boolean *degats)
+{
+	int i;
+	int n = 0;
+
+	for (i = 0; i < 5; i++)
+	{
+		if (degats[i] == TRUE)
+		{
+			n++;
+		}
+	}
+
+	return n;
+}
+
 int nombreAleatoire(int min, int max)
 {
 	int n = 0;
@@ -556,6 +707,7 @@ Coordonnees genererPosition(int direction, int longueur_bateau)
 	return position;
 }
 
+// Définir la cible où toucher l'ennemi
 Coordonnees definirCible()
 {
 	Coordonnees cible;
@@ -567,24 +719,6 @@ Coordonnees definirCible()
 	int i;
 	char *dictionnaire_colonne = "ABCDEFGHIJ";
 	char colonne;
-
-	// Saisie sécurisée
-	do 
-   	{
-    	printf("> Ligne de la cible (x): ");
-    	check = scanf("%d", &cible.x);
-
-	    if (check == FALSE)
-	   	{
-	        printf("Erreur: votre saisie est invalide !\n");
-	        fpurge(stdin);
-	    }
-        else if ((cible.x < 1) || (cible.x > 10))
-        {
-        	printf("Erreur: votre saisie est invalide !\n");
-        }
-
-   	} while (((cible.x < 1) || (cible.x > 10)) || (check == FALSE));
 
 	// Saisie sécurisée
 	do 
@@ -604,20 +738,148 @@ Coordonnees definirCible()
 
    	} while (((cible.y < 1) || (cible.y > 10)) || (check == FALSE));
 
+	// Saisie sécurisée
+	do 
+   	{
+    	printf("> Ligne de la cible (x): ");
+    	check = scanf("%d", &cible.x);
+
+	    if (check == FALSE)
+	   	{
+	        printf("Erreur: votre saisie est invalide !\n");
+	        fpurge(stdin);
+	    }
+        else if ((cible.x < 1) || (cible.x > 10))
+        {
+        	printf("Erreur: votre saisie est invalide !\n");
+        }
+
+   	} while (((cible.x < 1) || (cible.x > 10)) || (check == FALSE));
+
    	for (i = 0; i < strlen(dictionnaire_colonne); i++)
    	{
-   		if (i == (cible.x - 1))
+   		if (i == (cible.y - 1))
    		{
    			printf("%c\n", dictionnaire_colonne[i]);
    			colonne = dictionnaire_colonne[i];
    		}
    	}
 
-	printf("> Attaque en %c%d\n", colonne, cible.y);
+	printf("> Attaque en %c%d\n", colonne, cible.x);
 
 	return cible;
 }
 
+boolean verifierAttaque(int **grille_attaque, Coordonnees cible)
+{
+	boolean attaque = FALSE;
+	int i, j;
+
+	printf("Missile (%d, %d) ", (cible.x - 1), (cible.y - 1));
+
+	switch (grille_attaque[cible.x - 1][cible.y - 1])
+	{
+		case 0:
+		printf("> Attaque ratée !\n");
+		attaque = FALSE;
+		break;
+
+		case 1:
+		printf("> Porte-avions touché !\n");
+		attaque = TRUE;
+		break;
+
+		case 2:
+		printf("> Croiseur touché !\n");
+		attaque = TRUE;
+		break;
+
+		case 3:
+		printf("> Sous-marin touché !\n");
+		attaque = TRUE;
+		break;
+
+		case 4:
+		printf("> Torpilleur touché !\n");
+		attaque = TRUE;
+		break;
+
+		default:
+		attaque = FALSE;
+		break;
+	}
+
+	return attaque;
+}
+
+// Jeu
+void jeu()
+{
+	Joueur j1 = initialiserJoueur(1);
+	Joueur j2 = initialiserJoueur(2);
+	Coordonnees attaque;
+	boolean touche = FALSE;
+	int i = 0;
+
+	placerBateauxAleatoirement(&j1);
+	afficherGrillesJeu(j1.grille, j1.grille_attaque);
+	afficherStatistiquesJoueur(j1);
+
+	while (i < 3)
+	{
+		attaque = definirCible();
+		i++;
+
+		touche = verifierAttaque(j1.grille, attaque);
+		j1.grille_attaque = mettreAJourGrille(j1.grille_attaque, attaque, touche);
+		
+		if (touche == TRUE)
+		{
+			mettreAJourBateauxJoueur(&j1, attaque);
+		}
+
+		afficherGrillesJeu(j1.grille, j1.grille_attaque);
+	}
+	/*
+	while (i < 3)
+	{
+		attaque = definirCible();
+		i++;
+
+		touche = verifierAttaque(j1.grille, attaque);
+		j1.grille_attaque = mettreAJourGrille(j1.grille_attaque, attaque, touche);
+
+		afficherGrillesJeu(j1.grille, j1.grille_attaque);
+	}
+	*/
+
+	/*
+	while (i < 10)
+	{
+		attaque = definirCible();
+		verifierAttaque(j1.grille, attaque);
+		i++;
+	}
+	*/
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
 char *saisirCible()
 {
 	boolean check = FALSE;
@@ -714,3 +976,4 @@ boolean verifierChaine(char *chaine)
 
 	return ok;
 }
+*/
