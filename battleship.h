@@ -55,6 +55,10 @@ typedef struct Joueur
 {
 	Bateau *bateaux;
 	int nombre_bateaux;
+	int porte_avions;
+	int croiseurs;
+	int sous_marins;
+	int torpilleurs;
 	int **grille;
 	int **grille_attaque;
 	int joueur;
@@ -69,6 +73,7 @@ int **initialiserGrille();
 void afficherGrille(int **grille);
 void afficherGrillesJeu(int **grille, int **grille_attaque);
 int **mettreAJourGrille(int **grille, Coordonnees cible, boolean attaque);
+int **mettreAJourGrilleBateauTouche(int **grille, Coordonnees cible, int symbole);
 
 // Gestion des bateaux
 void placerBateauxAleatoirement(Joueur *joueur);
@@ -78,7 +83,7 @@ boolean validerPlacementBateaux(int **grille, Coordonnees position, int directio
 // Joueurs
 Joueur initialiserJoueur(int joueur);
 void afficherStatistiquesJoueur(Joueur j);
-void mettreAJourBateauxJoueur(Joueur *j, Coordonnees position);
+void mettreAJourBateauxJoueur(Joueur *j, Coordonnees position, int *symbole);
 void mettreAJourStatistiquesJoueur(Joueur *j);
 int nombreAttaqueSurBateaux(boolean *degats);
 
@@ -89,9 +94,11 @@ Coordonnees genererPosition(int direction, int longueur_bateau);
 // Attaque
 Coordonnees definirCible();
 boolean verifierAttaque(int **grille_attaque, Coordonnees cible);
+boolean verifierToucheCoule();
 
 // Jeu
 void jeu();
+boolean victoire(Joueur j);
 
 /*
 char *saisirCible();

@@ -386,6 +386,35 @@ int **mettreAJourGrille(int **grille, Coordonnees cible, boolean attaque)
 	return grille;
 }
 
+int **mettreAJourGrilleBateauTouche(int **grille, Coordonnees cible, int symbole)
+{
+	switch (symbole)
+	{
+		// Cible touchée
+		case 1:
+		grille[cible.x - 1][cible.y - 1] = 5; // 'C' -> 'c'
+		break;
+
+		case 2:
+		grille[cible.x - 1][cible.y - 1] = 6; // 'B' -> 'b'
+		break;
+
+		case 3:
+		grille[cible.x - 1][cible.y - 1] = 7; // 'S' -> 's'
+		break;
+
+		case 8:
+		grille[cible.x - 1][cible.y - 1] = 6; // 'D' -> 'd'
+		// printf("X (%d, %d)", (cible.x - 1), (cible.y - 1));
+		break;
+
+		default:
+		break;
+	}
+
+	return grille;
+}
+
 void placerBateauxAleatoirement(Joueur *joueur)
 {
 	int i = 0, j = 0, k = 0;
@@ -396,7 +425,7 @@ void placerBateauxAleatoirement(Joueur *joueur)
 
 	Coordonnees position;
 
-	printf("> Placement des bateaux en cours...\n");
+	printf("> Placement des bateaux en cours pour le joueur %d...\n", joueur->joueur);
 
 	for (i = 0; i < 5; i++) 
 	{
@@ -578,6 +607,36 @@ Joueur initialiserJoueur(int joueur)
 		}
 	}
 
+	j.porte_avions = 0;
+	j.croiseurs = 0;
+	j.sous_marins = 0;
+	j.torpilleurs = 0;
+
+	for (i = 0; i < j.nombre_bateaux; i++)
+	{
+		switch (j.bateaux[i].symbole)
+		{
+			case 1:
+			j.porte_avions++;
+			break;
+
+			case 2:
+			j.croiseurs++;
+			break;
+
+			case 3:
+			j.sous_marins++;
+			break;
+
+			case 4:
+			j.torpilleurs++;
+			break;
+
+			default:
+			break;
+		}
+	}
+
 	// j.grille = placerBateauxAleatoirement(&j.bateaux, j.grille);
 	afficherGrillesJeu(j.grille, j.grille_attaque);
 
@@ -586,52 +645,20 @@ Joueur initialiserJoueur(int joueur)
 
 void afficherStatistiquesJoueur(Joueur j)
 {
-	int porte_avions = 0;
-	int croiseurs = 0;
-	int sous_marins = 0;
-	int torpilleurs = 0;
-	int i;
-
-	for (i = 0; i < j.nombre_bateaux; i++)
-	{
-		switch (j.bateaux[i].symbole)
-		{
-			case 1:
-			porte_avions++;
-			break;
-
-			case 2:
-			croiseurs++;
-			break;
-
-			case 3:
-			sous_marins++;
-			break;
-
-			case 4:
-			torpilleurs++;
-			break;
-
-			default:
-			break;
-		}
-	}
-
 	printf(">>> Joueur: %d\n", j.joueur);
-	printf(" * Porte-avions: %d\n", porte_avions);
-	printf(" * Croiseurs: %d\n", croiseurs);
-	printf(" * Sous-marins: %d\n", sous_marins);
-	printf(" * Torpilleurs: %d\n\n", torpilleurs);
+	printf(" * Porte-avions: %d\n", j.porte_avions);
+	printf(" * Croiseurs: %d\n", j.croiseurs);
+	printf(" * Sous-marins: %d\n", j.sous_marins);
+	printf(" * Torpilleurs: %d\n\n", j.torpilleurs);
 }
 
-void mettreAJourBateauxJoueur(Joueur *joueur, Coordonnees position)
+void mettreAJourBateauxJoueur(Joueur *joueur, Coordonnees position, int *symbole)
 {
 	int i, j;
 	int attaques_restantes = 0;
 
 	for (i = 0; i < joueur->nombre_bateaux; i++)
 	{
-
 		for (j = 0; j < joueur->bateaux[i].longueur_bateau; j++)
 		{	
 			// Bateau touché
@@ -650,6 +677,8 @@ void mettreAJourBateauxJoueur(Joueur *joueur, Coordonnees position)
 				{
 					printf("Encore %d fois pour détruire le %s\n", joueur->bateaux[i].longueur_bateau - nombreAttaqueSurBateaux(joueur->bateaux[i].degats), joueur->bateaux[i].nom);
 				}
+
+				*symbole = joueur->grille[position.x - 1][position.y - 1];
 			}
 		}	
 	}
@@ -676,6 +705,9 @@ int nombreAttaqueSurBateaux(boolean *degats)
 	return n;
 }
 
+// ==============================================================================
+// JEU
+// ==============================================================================
 int nombreAleatoire(int min, int max)
 {
 	int n = 0;
@@ -707,6 +739,9 @@ Coordonnees genererPosition(int direction, int longueur_bateau)
 	return position;
 }
 
+// ==============================================================================
+// ATTAQUE
+// ==============================================================================
 // Définir la cible où toucher l'ennemi
 Coordonnees definirCible()
 {
@@ -812,20 +847,45 @@ boolean verifierAttaque(int **grille_attaque, Coordonnees cible)
 	return attaque;
 }
 
+boolean verifierToucheCoule(Joueur *J)
+{
+	return TRUE;
+}
+
+// ==============================================================================
+// JEU
+// ==============================================================================
+boolean victoire(Joueur j)
+{
+	if (j.nombre_bateaux == 0)
+	{
+		printf("Partie terminée: victoire du joueur %d\n", j.joueur);
+
+		return TRUE;
+	}
+	else
+	{
+		return FALSE;
+	}
+}
+
 // Jeu
 void jeu()
 {
 	Joueur j1 = initialiserJoueur(1);
 	Joueur j2 = initialiserJoueur(2);
 	Coordonnees attaque;
-	boolean touche = FALSE;
+	boolean touche = FALSE, touche_coule = FALSE;
 	int i = 0;
+	int symbole = 0;
+	char *nom_bateaux;
 
 	placerBateauxAleatoirement(&j1);
+	placerBateauxAleatoirement(&j2);
 	afficherGrillesJeu(j1.grille, j1.grille_attaque);
 	afficherStatistiquesJoueur(j1);
 
-	while (i < 3)
+	do
 	{
 		attaque = definirCible();
 		i++;
@@ -835,32 +895,20 @@ void jeu()
 		
 		if (touche == TRUE)
 		{
-			mettreAJourBateauxJoueur(&j1, attaque);
+			mettreAJourBateauxJoueur(&j1, attaque, &symbole);
+			j1.grille = mettreAJourGrilleBateauTouche(j1.grille, attaque, symbole);
+
+			touche_coule = verifierToucheCoule(&j1);
+
+			if (touche_coule == TRUE)
+			{
+
+			}
 		}
 
 		afficherGrillesJeu(j1.grille, j1.grille_attaque);
-	}
-	/*
-	while (i < 3)
-	{
-		attaque = definirCible();
-		i++;
 
-		touche = verifierAttaque(j1.grille, attaque);
-		j1.grille_attaque = mettreAJourGrille(j1.grille_attaque, attaque, touche);
-
-		afficherGrillesJeu(j1.grille, j1.grille_attaque);
-	}
-	*/
-
-	/*
-	while (i < 10)
-	{
-		attaque = definirCible();
-		verifierAttaque(j1.grille, attaque);
-		i++;
-	}
-	*/
+	} while ((victoire(j1) == FALSE) || (victoire(j2) == FALSE));
 }
 
 
