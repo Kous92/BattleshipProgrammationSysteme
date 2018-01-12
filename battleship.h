@@ -10,7 +10,7 @@ typedef enum
 /*=========================================================================
   Valeurs des case de la grille
   - -1: Cible ratée ==> 'X'
-  - 0: Eau ==> '-'
+  - 0: Eau ==> ''
   - 1: Porte-avions (5 cases) ==> 'C' (Carrier)
   - 2: Croiseur (4 cases) ==> 'B' (Battleship)
   - 3: Sous-marin (3 cases) ==> 'S' (Submarine)
@@ -82,10 +82,11 @@ boolean validerPlacementBateaux(int **grille, Coordonnees position, int directio
 
 // Joueurs
 Joueur initialiserJoueur(int joueur);
-void afficherStatistiquesJoueur(Joueur j);
+void afficherStatistiquesJoueur(Joueur j1, Joueur j2);
 void mettreAJourBateauxJoueur(Joueur *j, Coordonnees position, int *symbole);
 void mettreAJourStatistiquesJoueur(Joueur *j);
 int nombreAttaqueSurBateaux(boolean *degats);
+int definirJoueurDepart();
 
 // Coordonnées,...
 int nombreAleatoire(int min, int max);
@@ -94,11 +95,12 @@ Coordonnees genererPosition(int direction, int longueur_bateau);
 // Attaque
 Coordonnees definirCible();
 boolean verifierAttaque(int **grille_attaque, Coordonnees cible);
-boolean verifierToucheCoule();
+boolean verifierToucheCoule(Joueur *joueur);
+boolean verifierGrilleAttaque(int **grille_attaque, Coordonnees attaque);
 
 // Jeu
 void jeu();
-boolean victoire(Joueur j);
+boolean victoire(Joueur j1, Joueur j2);
 
 /*
 char *saisirCible();
