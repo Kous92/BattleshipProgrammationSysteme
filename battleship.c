@@ -492,7 +492,7 @@ void placerBateauxAleatoirement(Joueur *joueur)
 				#endif		
 			}
 			
-			// joueur->bateaux[i].degats[j] = FALSE;
+			joueur->bateaux[i].degats[j] = FALSE;
 		}
 
 		printf("\n");
@@ -642,9 +642,10 @@ Joueur initialiserJoueur(int joueur)
 
 	j.porte_avions = 0;
 	j.croiseurs = 0;
-	j.sous_marins = 0;
+	j.sous_marins1 = 0;
+	j.sous_marins2 = 0;
 	j.torpilleurs = 0;
-	j.cible_touchees = 0;
+	j.cibles_touchees = 0;
 
 	for (i = 0; i < j.nombre_bateaux; i++)
 	{
@@ -659,8 +660,11 @@ Joueur initialiserJoueur(int joueur)
 			break;
 
 			case 3:
+			j.sous_marins1++;
+			break;
+
 			case 4:
-			j.sous_marins++;
+			j.sous_marins2++;
 			break;
 
 			case 5:
@@ -696,11 +700,11 @@ void afficherStatistiquesJoueur(Joueur j1, Joueur j2)
 	printf(">>> Joueur: %d\n", j1.joueur);
 	printf(" * Porte-avions: %d\n", j1.porte_avions);
 	printf(" * Croiseurs: %d\n", j1.croiseurs);
-	printf(" * Sous-marins: %d\n", j1.sous_marins);
+	printf(" * Sous-marins: %d\n", (j1.sous_marins1 + j1.sous_marins2));
 	printf(" * Torpilleurs: %d\n", j1.torpilleurs);
 
-	bateaux = j1.porte_avions + j1.croiseurs + j1.sous_marins + j1.torpilleurs;
-	bateaux_ennemis = j2.porte_avions + j2.croiseurs + j2.sous_marins + j2.torpilleurs;
+	bateaux = j1.porte_avions + j1.croiseurs + j1.sous_marins1 + j1.sous_marins2 + j1.torpilleurs;
+	bateaux_ennemis = j2.porte_avions + j2.croiseurs + j2.sous_marins1 + j2.sous_marins2 + j2.torpilleurs;
 
 	if (bateaux_ennemis > 1)
 	{
@@ -736,9 +740,13 @@ void mettreAJourBateauxJoueur(Joueur *joueur, Coordonnees position, int *symbole
 			if ((joueur->bateaux[i].coordonnees[j].x == (position.x - 1)) && (joueur->bateaux[i].coordonnees[j].y == (position.y - 1)))
 			{
 				printf("%s ennemi touché", joueur->bateaux[i].nom);
-				joueur->bateaux[i].degats[j] = TRUE;
-
-				attaques_restantes = joueur->bateaux[i].longueur_bateau - nombreAttaqueSurBateaux(joueur->bateaux[i].degats);
+				
+				if (case_verifiee == FALSE)
+				{
+					joueur->bateaux[i].degats[j] = TRUE;
+				}
+				
+				attaques_restantes = joueur->bateaux[i].longueur_bateau - nombreAttaqueSurBateaux(joueur->bateaux[i].degats, joueur->bateaux[i].longueur_bateau);
 				
 				if (attaques_restantes == 0)
 				{
@@ -759,27 +767,26 @@ void mettreAJourBateauxJoueur(Joueur *joueur, Coordonnees position, int *symbole
 					printf("[DEBUG] Symbole reconnu: %d\n", joueur->grille[position.x - 1][position.y - 1]);
 					#endif
 
-					return;
+
 				}
 			}
 		}	
 	}
 }
 
-void mettreAJourStatistiquesJoueur(Joueur *j)
-{
-
-}
-
-int nombreAttaqueSurBateaux(boolean *degats)
+int nombreAttaqueSurBateaux(boolean *degats, int longueur_bateau)
 {
 	int i;
 	int n = 0;
 
-	for (i = 0; i < 5; i++)
+	for (i = 0; i < longueur_bateau; i++)
 	{
 		if (degats[i] == TRUE)
 		{
+			#ifdef DEBUG1
+			printf("[DEBUG] %d + 1\n", n);
+			#endif
+
 			n++;
 		}
 	}
@@ -924,6 +931,10 @@ boolean verifierAttaque(int **grille_attaque, Coordonnees cible)
 		break;
 
 		case 3:
+		printf("> Sous-marin touché !\n");
+		attaque = TRUE;
+		break;
+
 		case 4:
 		printf("> Sous-marin touché !\n");
 		attaque = TRUE;
@@ -942,9 +953,9 @@ boolean verifierAttaque(int **grille_attaque, Coordonnees cible)
 	return attaque;
 }
 
-boolean verifierToucheCoule(Joueur *joueur)
+boolean verifierToucheCoule(Joueur *joueur, int symbole)
 {
-	int i, j;
+	int i, k;
 	int attaques_restantes = 0;
 	int total_degats = 0;
 	int bateaux_detruits = 0;
@@ -952,14 +963,16 @@ boolean verifierToucheCoule(Joueur *joueur)
 
 	for (i = 0; i < joueur->nombre_bateaux; i++)
 	{
-		#ifdef DEBUG
-		printf("[DEBUG] Vérification du bateau %d (%s)... Dégâts: %d / %d\n", (i + 1), joueur->bateaux[i].nom, nombreAttaqueSurBateaux(joueur->bateaux[i].degats), joueur->bateaux[i].longueur_bateau);
-		#endif
-
-		total_degats = nombreAttaqueSurBateaux(joueur->bateaux[i].degats);
+		total_degats = nombreAttaqueSurBateaux(joueur->bateaux[i].degats, joueur->bateaux[i].longueur_bateau);
 		attaques_restantes = joueur->bateaux[i].longueur_bateau - total_degats;
 
-		if (total_degats == joueur->bateaux[i].longueur_bateau)
+		#ifdef DEBUG
+		printf("[DEBUG] Vérification du bateau %d (%s)... Dégâts: %d / %d\n", (i + 1), joueur->bateaux[i].nom, nombreAttaqueSurBateaux(joueur->bateaux[i].degats, joueur->bateaux[i].longueur_bateau), joueur->bateaux[i].longueur_bateau);
+		#endif
+
+		boolean ok = FALSE;
+
+		if ((total_degats == joueur->bateaux[i].longueur_bateau) && (joueur->bateaux[i].symbole == symbole))
 		{
 			if ((joueur->bateaux[i].symbole == 1) && (strcmp(joueur->bateaux[i].nom, "Porte-avions") == 0) && (joueur->porte_avions > 0))
 			{
@@ -977,17 +990,17 @@ boolean verifierToucheCoule(Joueur *joueur)
 				// joueur->nombre_bateaux--;
 			}	
 
-			if ((joueur->bateaux[i].symbole == 3) && (strcmp(joueur->bateaux[i].nom, "Sous-marin 1") == 0) && (joueur->sous_marins > 0))
+			if ((joueur->bateaux[i].symbole == 3) && (strcmp(joueur->bateaux[i].nom, "Sous-marin 1") == 0) && (joueur->sous_marins1 > 0))
 			{
-				joueur->sous_marins--;
+				joueur->sous_marins1--;
 				ok = TRUE;
 				printf("Touché coulé pour le %s\n", joueur->bateaux[i].nom);
 				// joueur->nombre_bateaux--;
 			}	
 
-			if ((joueur->bateaux[i].symbole == 4) && (strcmp(joueur->bateaux[i].nom, "Sous-marin 2") == 0) && (joueur->sous_marins > 0))
+			if ((joueur->bateaux[i].symbole == 4) && (strcmp(joueur->bateaux[i].nom, "Sous-marin 2") == 0) && (joueur->sous_marins2 > 0))
 			{
-				joueur->sous_marins--;
+				joueur->sous_marins2--;
 				ok = TRUE;
 				printf("Touché coulé pour le %s\n", joueur->bateaux[i].nom);
 				// joueur->nombre_bateaux--;
@@ -1005,6 +1018,16 @@ boolean verifierToucheCoule(Joueur *joueur)
 		{
 			#ifdef DEBUG
 			printf(" -> Encore %d fois pour détruire le %s\n", attaques_restantes, joueur->bateaux[i].nom);
+
+			printf("[DEBUG] Dégâts (bateau longueur %d): ", joueur->bateaux[i].longueur_bateau);
+
+			for (k = 0; k < joueur->bateaux[i].longueur_bateau; k++)
+			{	
+				printf("%d ", joueur->bateaux[i].degats[k]);
+			}
+
+			printf("\n");
+
 			#endif
 		}	
 	}
@@ -1023,7 +1046,7 @@ boolean verifierGrilleAttaque(int **grille_attaque, Coordonnees attaque)
 		break;
 
 		case -1:
-		case 9:
+		case -2:
 		cible_non_faite = FALSE;
 		break;
 
@@ -1043,16 +1066,21 @@ boolean victoire(Joueur j1, Joueur j2)
 	int bateaux1 = 0;
 	int bateaux2 = 0;
 
-	bateaux1 = j1.porte_avions + j1.croiseurs + j1.sous_marins + j1.torpilleurs;
-	bateaux2 = j2.porte_avions + j2.croiseurs + j2.sous_marins + j2.torpilleurs;
+	bateaux1 = j1.porte_avions + j1.croiseurs + j1.sous_marins1 + j1.sous_marins2 + j1.torpilleurs;
+	bateaux2 = j2.porte_avions + j2.croiseurs + j2.sous_marins1 + j2.sous_marins2 + j2.torpilleurs;
 
-	if ((bateaux1 == 0) || (j1.cible_touchees == 17))
+	#ifdef DEBUG
+	printf("[DEBUG] Joueur 1 > bateaux: %d, attaques réussies: %d\n", bateaux1, j1.cibles_touchees);
+	printf("[DEBUG] Joueur 2 > bateaux: %d, attaques réussies: %d\n", bateaux2, j2.cibles_touchees);
+	#endif
+
+	if ((bateaux1 == 0) || (j1.cibles_touchees == 17))
 	{
 		printf("Partie terminée: victoire du joueur %d\n", j2.joueur);
 
 		return TRUE;
 	}
-	else if ((bateaux2 == 0) || (j2.cible_touchees == 17))
+	else if ((bateaux2 == 0) || (j2.cibles_touchees == 17))
 	{
 		printf("Partie terminée: victoire du joueur %d\n", j1.joueur);
 
@@ -1102,7 +1130,7 @@ void jeu()
 					touche_coule = FALSE;
 				}
 
-				if ((touche) && (!touche_coule))
+				if (touche)
 				{
 					printf("L'ennemi a touché un de vos bateaux\n");
 					touche = FALSE;
@@ -1132,7 +1160,7 @@ void jeu()
 				
 				if (touche == TRUE)
 				{
-					j1.cible_touchees++;
+					j1.cibles_touchees++;
 					mettreAJourBateauxJoueur(&j2, attaque, &symbole);
 
 					#ifdef DEBUG
@@ -1141,7 +1169,7 @@ void jeu()
 
 					j2.grille = mettreAJourGrilleBateauTouche(j2.grille, attaque, symbole);
 
-					touche_coule = verifierToucheCoule(&j2);
+					touche_coule = verifierToucheCoule(&j2, symbole);
 					fin_partie = victoire(j1, j2);
 				}
 
@@ -1157,7 +1185,7 @@ void jeu()
 					touche_coule = FALSE;
 				}
 
-				if ((touche) && (!touche_coule))
+				if (touche)
 				{
 					printf("L'ennemi a touché un de vos bateaux\n");
 					touche = FALSE;
@@ -1187,7 +1215,7 @@ void jeu()
 				
 				if (touche == TRUE)
 				{
-					j2.cible_touchees++;
+					j2.cibles_touchees++;
 					mettreAJourBateauxJoueur(&j1, attaque, &symbole);
 
 					#ifdef DEBUG
@@ -1196,7 +1224,7 @@ void jeu()
 
 					j1.grille = mettreAJourGrilleBateauTouche(j1.grille, attaque, symbole);
 
-					touche_coule = verifierToucheCoule(&j1);
+					touche_coule = verifierToucheCoule(&j1, symbole);
 					fin_partie = victoire(j1, j2);
 				}
 
