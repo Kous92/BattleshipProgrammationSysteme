@@ -8,7 +8,7 @@ typedef enum
 } boolean;
 
 /*=========================================================================
-  Valeurs des case de la grille
+  Valeurs des cases de la grille
   - -1: Cible ratée ==> 'X'
   - 0: Eau ==> ''
   - 1: Porte-avions (5 cases) ==> 'C' (Carrier)
@@ -21,20 +21,6 @@ typedef enum
   - 8: Torpilleur touché ==> 'd'
   - 9: Cible touchée ==> '*'
   =========================================================================*/
-typedef enum
-{
-	CIBLE_RATEE = -1,
-	EAU = 0,
-	PORTE_AVIONS = 1,
-	CROISEUR = 2,
-	SOUS_MARIN = 3,
-	TORPILLEUR = 4,
-	PORTE_AVIONS_HIT = 5,
-	CROISEUR_HIT = 6,
-	SOUS_MARIN_HIT = 7,
-	TORPILLEUR_HIT = 8
-} Symbole;
-
 typedef struct Coordonnees
 {
 	int x;
@@ -74,9 +60,20 @@ typedef struct Grille
 } Grille;
 
 // Fonction de mise en pause
-void pause();
+// void pause();
 void viderBuffer();
-void error(const char *msg);
+void erreur(const char *msg);
+
+// Connexion au serveur
+int connexionServeur(char *adresse_ip, int port);
+int receptionInt(int sockfd);
+void receptionMessage(int sockfd, char *message);
+void envoyerInt(int sockfd, int message);
+void envoiMessage(int cli_sockfd, char *message);
+void envoyerGrille(int **grille, int sockfd);
+int **recevoirGrille(int sockfd);
+void envoyerStatistiques(Joueur joueur, int sockfd);
+void recevoirStatistiques(Joueur *joueur, int sockfd);
 
 // Gestion de la grille
 int **initialiserGrille();

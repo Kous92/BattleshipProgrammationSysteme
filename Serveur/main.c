@@ -12,38 +12,47 @@
 
 int main(int argc, char *argv[])
 {   
+    int player_count = 0;
+    pthread_mutex_t mutexcount;
+
     /* Make sure a port was specified. */
     if (argc < 2) {
-        fprintf(stderr,"ERROR, no port provided\n");
+        fprintf(stderr,"ERREUR: Aucun port renseigné\n");
         exit(1);
     }
     
-    int lis_sockfd = setup_listener(atoi(argv[1])); /* Listener socket. */
+    int lis_sockfd = (atoi(argv[1])); /* Listener socket. */
     pthread_mutex_init(&mutexcount, NULL);
+
+    printf(">>> SERVEUR BATAILLE NAVALE LANCÉ\n");
 
     while (1) 
     {
+        // Ici, le serveur peut gérer jusqu'à 126 salons
         if (player_count <= 252) 
-        { /* Only launch a new game if we have room. Otherwise, just spin. */  
-            int *cli_sockfd = (int *)malloc(2*sizeof(int)); /* Client sockets */
-            memset(cli_sockfd, 0, 2*sizeof(int));
+        { 
+            // Une nouvelle partie se lance si on a un salon de 2 joueurs. Sinon, laisser tourner  
+            int *cli_sockfd = (int *) malloc(2 *sizeof(int)); // Sockets client
+            memset(cli_sockfd, 0, 2 *sizeof(int));
             
             /* Get two clients connected. */
-            get_clients(lis_sockfd, cli_sockfd);
+            recevoirClients(lis_sockfd, cli_sockfd);
             
             #ifdef DEBUG
-            printf("[DEBUG] Starting new game thread...\n");
+            printf("[DEBUG] Démarrage d'un nouveau thread de jeu...\n");
             #endif
 
             pthread_t thread; /* Don't really need the thread id for anything in this case, but here it is anyway. */
             int result = pthread_create(&thread, NULL, run_game, (void *)cli_sockfd); /* Start a new thread for this game. */
-            if (result){
-                printf("Thread creation failed with return code %d\n", result);
+
+            if (result)
+            {
+                printf("Échec de la création du thread avec le code d'erreur %d\n", result);
                 exit(-1);
             }
             
             #ifdef DEBUG
-            printf("[DEBUG] New game thread started.\n");
+            printf("[DEBUG] Thread lancé, nouvelle partie.\n");
             #endif
         }
     }

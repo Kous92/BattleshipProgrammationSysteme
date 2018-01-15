@@ -5,10 +5,16 @@
 #include <time.h>
 #include <math.h>
 #include <string.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netdb.h>
 
 #define DEBUG
 
 // Fonction de mise en pause
+/*
 void pause()
 {
 	char check;
@@ -24,6 +30,7 @@ void pause()
 
 	return;
 }
+*/
 
 void viderBuffer()
 {
@@ -35,15 +42,393 @@ void viderBuffer()
     }
 }
 
-void error(const char *msg)
+void erreur(const char *msg)
 {
     #ifdef DEBUG
     perror(msg);
     #else
-    printf("ERREUR: Serveur arrêté ou déconnexion de l'autre joueur.\nGAME OVER.\n");
+    printf("Soit le serveur a planté, soit le joueur s'est déconnecté.\nGAME OVER.\n");
     #endif 
 
     exit(0);
+}
+
+// Connexion au serveur
+int connexionServeur(char *adresse_ip, int port)
+{
+	struct sockaddr_in adresse_serveur;
+    struct hostent *serveur;
+ 
+    // Obtention d'un socket
+    int sockfd = socket(AF_INET, SOCK_STREAM, 0);
+	
+    if (sockfd < 0) 
+    {
+        erreur("Erreur lors de l'ouverture du socket pour le serveur.");
+    }
+	
+    // Obtenir l'adresse du serveur.
+    serveur = gethostbyname(adresse_ip);
+	
+    if (serveur == NULL) 
+    {
+        fprintf(stderr,"ERREUR, aucun serveur disponible\n");
+        exit(0);
+    }
+	
+	// Mise à zéro de la mémoire pour les informations du serveur
+	memset(&adresse_serveur, 0, sizeof(adresse_serveur));
+
+	// Configuration des informations du serveur
+    adresse_serveur.sin_family = AF_INET;
+    memmove(serveur->h_addr, &adresse_serveur.sin_addr.s_addr, serveur->h_length);
+    adresse_serveur.sin_port = htons(port); 
+
+	/* Make the connection. */
+    if (connect(sockfd, (struct sockaddr *) &adresse_serveur, sizeof(adresse_serveur)) < 0) 
+    {
+        erreur("Erreur lors de la connexion au serveur");
+    }
+
+    #ifdef DEBUG
+    printf("[DEBUG] Connexion établie.\n");
+    #endif 
+    
+    return sockfd;
+}
+
+// Lecture d'un int depuis un socket serveur.
+int receptionInt(int sockfd)
+{
+    int message = 0;
+    int n = read(sockfd, &message, sizeof(int));
+    
+    if ((n < 0) || (n != sizeof(int)))
+    { 
+        erreur("Erreur lors de la lecture du int depuis le socket serveur");
+    }
+    
+    #ifdef DEBUG
+    printf("[DEBUG] Int reçu: %d\n", message);
+    #endif 
+    
+    return message;
+}
+
+void receptionMessage(int sockfd, char *message)
+{
+	/* Tous les messages sont sur 3 octets. */
+    memset(message, 0, 4);
+    int n = read(sockfd, message, 3);
+    
+    // Pas ce qu'on attendait, le serveur s'est éteint ou l'autre client s'est déconnecté
+    if ((n < 0) || (n != 3))
+    {
+        erreur("Erreur lors de la lecture du int depuis le socket serveur.");
+    }
+
+    #ifdef DEBUG
+    printf("[DEBUG] Message reçu: %s\n", message);
+    #endif 
+}
+
+// Envoi d'un int vers le socket serveur
+void envoyerInt(int sockfd, int message)
+{
+    int n = write(sockfd, &message, sizeof(int));
+
+    if (n < 0)
+    {
+        erreur("Erreur lors de l'écriture de l'int vers le socket serveur");
+    }
+    
+    #ifdef DEBUG
+    printf("[DEBUG] Int écrit vers le serveur: %d\n", message);
+    #endif 
+}
+
+// Envoi d'un message vers le socket serveur */
+void envoiMessage(int cli_sockfd, char *message)
+{
+    int n = write(cli_sockfd, message, strlen(message));
+
+    if (n < 0)
+    {
+        erreur("Erreur lors de l'envoi du message au socket client");
+    }
+}
+
+void envoyerGrille(int **grille, int sockfd)
+{
+	int i, j, n;
+	int k = 0;
+	char *resultat;
+	char buffer[100];
+
+	#ifdef DEBUG
+	printf("[DEBUG] Grille: ");
+	#endif
+
+	for (int i = 0; i < 10; i++)
+	{
+		for (int j = 0; j < 10; i++)
+		{
+			switch (grille[i][j])
+			{
+				// Eau
+				case 0:
+				buffer[k] = '~';
+				break;
+
+				// Porte-avions (Carrier)
+				case 1:
+				buffer[k] = 'C';
+				break;
+
+				// Croiseur (Croiseur)
+				case 2:
+				buffer[k] = 'B';
+				break;
+
+				// Sous-marin (Submarine)
+				case 3:
+				buffer[k] = 'R';
+				break;
+
+				case 4:
+				buffer[k] = 'S';
+				break;
+
+				// Torpilleur (Destroyer)
+				case 5:
+				buffer[k] = 'D';
+				break;
+
+				// Porte-avions touché
+				case 6:
+				buffer[k] = 'c';
+				break;
+
+				// Croiseur touché
+				case 7:
+				buffer[k] = 'b';
+				break;
+
+				// Sous-marin touché
+				case 8:
+				buffer[k] = 'r';
+				break;
+
+				case 9:
+				buffer[k] = 's';
+				break;
+
+				// Torpilleur touché
+				case 10:
+				buffer[k] = 'd';
+				break;
+
+				// Cible ratée
+				case -1:
+				buffer[k] = 'X';
+				break;
+
+				// Cible touchée
+				case -2:
+				buffer[k] = '*';
+				break;
+
+				default:
+				buffer[k] = '-';
+				break;
+			}
+
+			buffer[k] = grille[i][j];
+
+			#ifdef DEBUG
+			printf("%d", buffer[k]);
+			#endif
+
+			k++;
+		}
+	}
+
+	#ifdef DEBUG
+	printf("\n");
+	#endif
+
+	resultat = buffer;
+
+	n = write(sockfd, resultat, strlen(resultat));
+
+	if (n < 0)
+	{
+		erreur("ERREUR: L'envoi du message au socket client a échoué");
+	}
+}
+
+int **recevoirGrille(int sockfd)
+{
+	char *message;
+	memset(message, 0, 101);
+	int n = read(sockfd, message, 100);
+	int i, j, k = 0;
+	int **grille = (int **) malloc(10 *sizeof(int *));
+
+	if (grille == NULL)
+	{
+		exit(0);
+	}
+
+	// Suite de l'allocation dynamique: 2nde dimension du tableau: les colonnes
+	for (i = 0; i < 10; i++)
+	{
+		// Allocation du sous-tableau dans la case du premier tableau dynamique
+		grille[i] = (int *) malloc(10 *sizeof(int));
+
+		if (grille[i] == NULL)
+		{
+			printf("Erreur: l'allocation dynamique a échoué\n");
+			exit(0);
+		}
+	}
+
+	for (i = 0; i < 10; i++)
+	{
+		for (j = 0; j < 10; j++)
+		{
+			grille[i][j] = 0;
+		}
+	}
+
+	if ((n < 0) || (n != 100))
+	{
+		erreur("ERREUR: Échec de la réception du message envoyé du serveur");
+	}
+
+	#ifdef DEBUG
+    printf("[DEBUG] Message reçu: %s\n", message);
+	printf("[DEBUG] Grille: ");
+    #endif
+
+    for (i = 0; i < 10; i++)
+	{
+		for (j = 0; j < 10; i++)
+		{
+			switch (message[k])
+			{
+				// Eau
+				case '~':
+				grille[i][j] = 0;
+				break;
+
+				// Porte-avions (Carrier)
+				case 'C':
+				grille[i][j] = 1;
+				break;
+
+				// Croiseur (Croiseur)
+				case 'B':
+				grille[i][j] = 2;
+				break;
+
+				// Sous-marin (Submarine)
+				case 'R':
+				grille[i][j] = 3;
+				break;
+
+				case 'S':
+				grille[i][j] = 4;
+				break;
+
+				// Torpilleur (Destroyer)
+				case 'D':
+				grille[i][j] = 5;
+				break;
+
+				// Porte-avions touché
+				case 'c':
+				grille[i][j] = 6;
+				break;
+
+				// Croiseur touché
+				case 'b':
+				grille[i][j] = 7;
+				break;
+
+				// Sous-marin touché
+				case 'r':
+				grille[i][j] = 8;
+				break;
+
+				case 's':
+				grille[i][j] = 9;
+				break;
+
+				// Torpilleur touché
+				case 'd':
+				grille[i][j] = 10;
+				break;
+
+				// Cible ratée
+				case 'X':
+				grille[i][j] = -1;
+				break;
+
+				// Cible touchée
+				case '*':
+				grille[i][j] = -2;
+				break;
+
+				default:
+				grille[i][j] = -3;
+				break;
+			}
+
+			#ifdef DEBUG
+			printf("%d", grille[i][j]);
+			#endif
+
+			k++;
+		}
+	}
+
+	#ifdef DEBUG
+	printf("\n");
+	#endif
+
+	return grille;
+}	
+
+void envoyerStatistiques(Joueur joueur, int sockfd)
+{
+
+}
+
+void recevoirStatistiques(Joueur *joueur, int sockfd)
+{
+
+}
+
+/* Changer le tour du serveur turn and sends it to the server. */
+void jouerTour(int sockfd)
+{
+    char buffer[10];
+    
+    while (1) 
+    { /* Ask until we receive. */ 
+        printf("Enter 0-8 to make a move, or 9 for number of active players: ");
+	    fgets(buffer, 10, stdin);
+	    int move = buffer[0] - '0';
+        if (move <= 9 && move >= 0){
+            printf("\n");
+            /* Send players move to the server. */
+            write_server_int(sockfd, move);   
+            break;
+        } 
+        else
+            printf("\nInvalid input. Try again.\n");
+    }
 }
 
 int **initialiserGrille()
@@ -1106,30 +1491,148 @@ boolean victoire(Joueur j1, Joueur j2)
 // Jeu
 void jeu()
 {
-	Joueur j1 = initialiserJoueur(1);
-	Joueur j2 = initialiserJoueur(2);
+	char *adresse_ip = "127.0.0.1";
+	int port = 8888;
+	
+	int sockfd = connexionServeur(adresse_ip, port);
+	int id = receptionInt(sockfd);
+
+	#ifdef DEBUG
+    printf("[DEBUG] Client ID: %d\n", id);
+    #endif 
+
 	Coordonnees attaque;
 	boolean touche = FALSE, touche_coule = FALSE, cible_non_faite = FALSE, fin_partie = FALSE;
 	int i = 0;
 	int symbole = 0;
 	int tour_joueur = 0;
 	char *nom_bateau;
+	char msg[4];
 
+	Joueur j1 = initialiserJoueur(1);
+	Joueur j2 = initialiserJoueur(2);
 	placerBateauxAleatoirement(&j1);
-	placerBateauxAleatoirement(&j2);
+	envoyerGrille(j1.grille, sockfd);
+	envoyerGrille(j1.grille_attaque, sockfd);
+	j2.grille = recevoirGrille(sockfd);
+	j2.grille_attaque = recevoirGrille(sockfd);
 	
+	// Attente pour le démarrage du jeu 
+    do 
+    {
+        receptionMessage(sockfd, msg);
+
+        if (!strcmp(msg, "HLD"))
+        {
+            printf("En attente d'un adversaire...\n");
+        }
+
+    } while (strcmp(msg, "SRT"));
+
+    // printf()
 	tour_joueur = definirJoueurDepart();
-	afficherGrillesJeu(j1.grille, j1.grille_attaque);
-	afficherGrillesJeu(j2.grille, j2.grille_attaque);
+	// afficherGrillesJeu(j1.grille, j1.grille_attaque);
+	// afficherGrillesJeu(j2.grille, j2.grille_attaque);
 	pause();
 	
-	while (fin_partie == FALSE)
+	while (1)
 	{
 		system("clear");
+		receptionMessage(sockfd, msg);
+
 		cible_non_faite = FALSE;
 
 		if (fin_partie == FALSE)
-		{
+		{   
+			if (!strcmp(msg, "TRN")) 
+			{ 
+				/* Take a turn. */
+		        printf("Votre tour...\n");
+
+		        afficherGrillesJeu(j1.grille, j1.grille_attaque);
+
+				if (touche_coule == TRUE)
+				{
+					printf("L'ennemi a détruit un de vos bateaux\n");
+					touche_coule = FALSE;
+				}
+
+				if ((touche == TRUE) && (touche_coule == FALSE))
+				{
+					printf("L'ennemi a touché un de vos bateaux\n");
+					touche = FALSE;
+				}
+
+				afficherStatistiquesJoueur(j1, j2);
+
+				do
+				{
+					attaque = definirCible();
+  
+					if (verifierGrilleAttaque(j1.grille_attaque, attaque) == FALSE)
+					{
+						printf("ERREUR: Cible (%d, %d) déjà tentée, définissez une autre cible\n", attaque.x, attaque.y);
+					}
+					else
+					{
+						cible_non_faite = TRUE;
+					}
+
+				} while (cible_non_faite == FALSE);
+
+				envoyerInt(sockfd, attaque.x); 
+				envoyerInt(sockfd, attaque.y); 
+
+				touche = verifierAttaque(j2.grille, attaque);
+				j1.grille_attaque = mettreAJourGrille(j1.grille_attaque, attaque, touche);
+				
+				if (touche == TRUE)
+				{
+					j1.cibles_touchees++;
+					mettreAJourBateauxJoueur(&j2, attaque, &symbole);
+
+					#ifdef DEBUG
+					printf("[DEBUG] Symbole cible touchée: %d\n", symbole);
+					#endif
+
+					j2.grille = mettreAJourGrilleBateauTouche(j2.grille, attaque, symbole);
+
+					touche_coule = verifierToucheCoule(&j2, symbole);
+					fin_partie = victoire(j1, j2);
+				}
+       		}
+	        else if (!strcmp(msg, "CNT")) 
+	        { /* Server is sending the number of active players. Note that a "TRN" message will always follow a "CNT" message. */
+	            int num_players = receptionInt(sockfd);
+	            printf("There are currently %d active players.\n", num_players); 
+	        }
+	        else if (!strcmp(msg, "UPD")) 
+	        {
+	            /* Server is sending a game board update. */
+	            get_update(sockfd, board);
+	            draw_board(board);
+	        }
+	        else if (!strcmp(msg, "WAT")) 
+	        { /* Wait for other player to take a turn. */
+	            printf("En attente de l'attaque de votre adversaire...\n");
+	        }
+	        else if (!strcmp(msg, "WIN")) 
+	        { /* Winner. */
+	            printf("You win!\n");
+	            break;
+	        }
+	        else if (!strcmp(msg, "LSE")) { /* Loser. */
+	            printf("You lost.\n");
+	            break;
+	        }
+	        else if (!strcmp(msg, "DRW")) 
+	        { /* Game is a draw. */
+	            printf("Draw.\n");
+	            break;
+	        }
+	        else /* Weird... */
+            error("Erreur inconnue.");
+
 			switch (tour_joueur)
 			{
 				case 1:
