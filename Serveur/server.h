@@ -75,11 +75,14 @@ void recevoirClients(int lis_sockfd, int *cli_sockfd);
 
 // Attaques des joueurs
 Coordonnees attaqueJoueur(int cli_sockfd);
+boolean verifierAttaque(int **grille_attaque, Coordonnees cible);
+int **mettreAJourGrille(int **grille, Coordonnees cible, boolean attaque);
+int **mettreAJourGrilleBateauTouche(int **grille, Coordonnees cible, int symbole);
+boolean victoire(Joueur j1, Joueur j2);
 int check_move(char board[][3], int move, int player_id);
 void update_board(char board[][3], int move, int player_id);
 void draw_board(char board[][3]);
 void envoyerMiseAJour(int *cli_sockfd, int attaqueX, int attaqueY, int id_joueur);
-void send_player_count(int cli_sockfd);
 int check_board(char board[][3], int last_move);
 
 // Thread de jeu

@@ -1585,6 +1585,7 @@ void jeu()
 
 				touche = verifierAttaque(j2.grille, attaque);
 				j1.grille_attaque = mettreAJourGrille(j1.grille_attaque, attaque, touche);
+				envoyerGrille(j1.grille_attaque);
 				
 				if (touche == TRUE)
 				{

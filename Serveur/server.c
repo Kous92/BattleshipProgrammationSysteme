@@ -300,162 +300,6 @@ void afficherGrille(int **grille)
     }
 }
 
-void afficherGrillesJeu(int **grille, int **grille_attaque)
-{
-    int i, j;
-    char *lettres = "ABCDEFGHIJ";
-
-    if (grille == NULL)
-    {
-        exit(0);
-    }
-
-    if (grille_attaque == NULL)
-    {
-        exit(0);
-    }
-
-    printf("          Grille principale");
-    printf("                ");
-    printf("Grille d'attaque\n");
-
-    // Grille des bateaux
-    for (i = 0; i < 10; i++)
-    {
-        if (i == 0)
-        {
-            printf("   ");
-        }
-        
-        printf(" %c ", lettres[i]);
-    }
-
-    // Grille d'attaque
-    for (i = 0; i < 10; i++)
-    {
-        if (i == 0)
-        {
-            printf("   ");
-        }
-        
-        printf(" %c ", lettres[i]);
-    }
-
-    printf("\n");
-
-    // Lignes
-    for (i = 0; i < 10; i++)
-    {
-        if (i < 9)
-        {
-            printf("%d  ", (i + 1));
-        }
-        else
-        {
-            printf("10 ");
-        }
-
-        // Colonnes: grille des bateaux
-        for (j = 0; j < 10; j++)
-        {
-            switch (grille[i][j])
-            {
-                // Eau
-                case 0:
-                printf(" ~ ");
-                break;
-
-                // Porte-avions (Carrier)
-                case 1:
-                printf(" C ");
-                break;
-
-                // Croiseur (Croiseur)
-                case 2:
-                printf(" B ");
-                break;
-
-                // Sous-marin (Submarine)
-                case 3:
-                case 4:
-                printf(" S ");
-                break;
-
-                // Torpilleur (Destroyer)
-                case 5:
-                printf(" D ");
-                break;
-
-                // Porte-avions touché
-                case 6:
-                printf(" c ");
-                break;
-
-                // Croiseur touché
-                case 7:
-                printf(" b ");
-                break;
-
-                // Sous-marin touché
-                case 8:
-                case 9:
-                printf(" s ");
-                break;
-
-                // Torpilleur touché
-                case 10:
-                printf(" d ");
-                break;
-
-                // Cible ratée
-                case -1:
-                printf(" X ");
-                break;
-
-                // Cible touchée
-                case -2:
-                printf(" * ");
-                break;
-
-                default:
-                printf(" - ");
-                break;
-            }
-        }
-
-        printf("   ");
-
-        // Colonnes: grille d'attaque
-        for (j = 0; j < 10; j++)
-        {
-            switch (grille_attaque[i][j])
-            {
-                // Eau
-                case 0:
-                printf(" ~ ");
-                break;
-
-                // Cible ratée
-                case -1:
-                printf(" X ");
-                break;
-
-                // Cible touchée
-                case -2:
-                printf(" * ");
-                break;
-
-                default:
-                printf(" - ");
-                break;
-            }
-        }
-
-        printf("\n");
-    }
-
-    printf("\n");
-}
 void erreur(const char *message)
 {
     perror(message);
@@ -512,7 +356,7 @@ void envoiIntClient(int cli_sockfd, int message)
 }
 
 /* Writes a message to both client sockets. */
-void envoiMessage2Clients(int *cli_sockfd, char *message);
+void envoiMessage2Clients(int *cli_sockfd, char *message)
 {
     envoiMessageClient(cli_sockfd[0], message);
     envoiMessageClient(cli_sockfd[1], message);
@@ -521,8 +365,8 @@ void envoiMessage2Clients(int *cli_sockfd, char *message);
 /* Writes an int to both client sockets. */
 void envoiInt2Clients(int *cli_sockfd, int message)
 {
-    envoiIntClient(cli_sockfd[0], int message)
-    envoiIntClient(cli_sockfd[1], int message)
+    envoiIntClient(cli_sockfd[0], message);
+    envoiIntClient(cli_sockfd[1], message);
 }
 
 void envoyerGrille(int **grille, int sockfd)
@@ -824,7 +668,7 @@ void recevoirClients(int lis_sockfd, int *cli_sockfd)
     while (nombre_connexions < 2)
     {
         // Écoute pour les clients
-	    listen(lis_sockfd, 253 - player_count);
+	    listen(lis_sockfd, 253 - nombre_joueurs);
         
         // Mise à 0 de la mémoire pour les informations du serveur
         memset(&cli_addr, 0, sizeof(cli_addr));
@@ -874,7 +718,7 @@ void recevoirClients(int lis_sockfd, int *cli_sockfd)
 //================================
 // Fonctions de jeu
 // ==============================
-Coordonnees attaqueJoueur(int cli_sockfd);
+Coordonnees attaqueJoueur(int cli_sockfd)
 {
     #ifdef DEBUG
     printf("[DEBUG] Getting player attack (x position)...\n");
@@ -882,12 +726,149 @@ Coordonnees attaqueJoueur(int cli_sockfd);
 
     Coordonnees attaque;
 
-    write_client_msg(cli_sockfd, "TRN");
+    envoiMessageClient(cli_sockfd, "TRN");
 
     attaque.x = receptionInt(cli_sockfd);
     attaque.y = receptionInt(cli_sockfd);
 
     return attaque;
+}
+
+boolean verifierAttaque(int **grille_attaque, Coordonnees cible)
+{
+    boolean attaque = FALSE;
+    int i, j;
+
+    #ifdef DEBUG
+    printf("[DEBUG] Missile (%d, %d) ", (cible.x - 1), (cible.y - 1));
+    #endif
+
+    switch (grille_attaque[cible.x - 1][cible.y - 1])
+    {
+        case 0:
+        printf("> Attaque ratée !\n");
+        attaque = FALSE;
+        break;
+
+        case 1:
+        printf("> Porte-avions touché !\n");
+        attaque = TRUE;
+        break;
+
+        case 2:
+        printf("> Croiseur touché !\n");
+        attaque = TRUE;
+        break;
+
+        case 3:
+        printf("> Sous-marin touché !\n");
+        attaque = TRUE;
+        break;
+
+        case 4:
+        printf("> Sous-marin touché !\n");
+        attaque = TRUE;
+        break;
+
+        case 5:
+        printf("> Torpilleur touché !\n");
+        attaque = TRUE;
+        break;
+
+        default:
+        attaque = FALSE;
+        break;
+    }
+
+    return attaque;
+}
+
+int **mettreAJourGrille(int **grille, Coordonnees cible, boolean attaque)
+{
+    switch (attaque)
+    {
+        // Cible touchée
+        case TRUE:
+        grille[cible.x - 1][cible.y - 1] = -2;
+
+        #ifdef DEBUG
+        printf("[DEBUG] Cible touchée en (%d, %d): \n", (cible.x - 1), (cible.y - 1));
+        #endif 
+
+        break;
+
+        case FALSE:
+        grille[cible.x - 1][cible.y - 1] = -1;
+
+        #ifdef DEBUG
+        printf("[DEBUG] Cible ratée en (%d, %d): \n", (cible.x - 1), (cible.y - 1));
+        #endif
+
+        break;
+
+        default:
+        break;
+    }
+
+    return grille;
+}
+
+int **mettreAJourGrilleBateauTouche(int **grille, Coordonnees cible, int symbole)
+{
+    switch (symbole)
+    {
+        // Cible touchée
+        case 1:
+        grille[cible.x - 1][cible.y - 1] = 6; // 'C' -> 'c'
+
+        #ifdef DEBUG
+        printf("[DEBUG] Porte-avions touché en (%d, %d), symbole 1 -> %d: \n", (cible.x - 1), (cible.y - 1), grille[cible.x - 1][cible.y - 1]);
+        #endif
+
+        break;
+
+        case 2:
+        grille[cible.x - 1][cible.y - 1] = 7; // 'B' -> 'b'
+
+        #ifdef DEBUG
+        printf("[DEBUG] Croiseur touché en (%d, %d), symbole 2 -> %d: \n", (cible.x - 1), (cible.y - 1), grille[cible.x - 1][cible.y - 1]);
+        #endif
+
+        break;
+
+        case 3:
+        grille[cible.x - 1][cible.y - 1] = 8; // 'S' -> 's'
+
+        #ifdef DEBUG
+        printf("[DEBUG] Sous-marin touché en (%d, %d), symbole 3 -> %d: \n", (cible.x - 1), (cible.y - 1), grille[cible.x - 1][cible.y - 1]);
+        #endif
+
+        break;
+
+        case 4:
+        grille[cible.x - 1][cible.y - 1] = 9; // 'S' -> 's'
+
+        #ifdef DEBUG
+        printf("[DEBUG] Sous-marin touché en (%d, %d), symbole 4 -> %d: \n", (cible.x - 1), (cible.y - 1), grille[cible.x - 1][cible.y - 1]);
+        #endif
+
+        break;
+
+        case 5:
+        grille[cible.x - 1][cible.y - 1] = 10; // 'D' -> 'd'
+
+        #ifdef DEBUG
+        printf("[DEBUG] Torpilleur touché en (%d, %d), symbole 5 -> %d: \n", (cible.x - 1), (cible.y - 1), grille[cible.x - 1][cible.y - 1]);
+        #endif
+
+        // printf("X (%d, %d)", (cible.x - 1), (cible.y - 1));
+        break;
+
+        default:
+        break;
+    }
+
+    return grille;
 }
 
 // Dessiner les grilles dans stdout
@@ -1059,7 +1040,7 @@ void envoyerMiseAJour(int *cli_sockfd, int attaqueX, int attaqueY, int id_joueur
     envoiMessage2Clients(cli_sockfd, "UPD");
 
     /* Send the id of the player that made the move. */
-    envoiInt2Clients(cli_sockfd, player_id);
+    envoiInt2Clients(cli_sockfd, id_joueur);
     
     // Envoi de l'attaque
     envoiInt2Clients(cli_sockfd, attaqueX);
@@ -1070,20 +1051,35 @@ void envoyerMiseAJour(int *cli_sockfd, int attaqueX, int attaqueY, int id_joueur
     #endif
 }
 
-/* Sends the number of active players to a client. */
-void send_player_count(int cli_sockfd)
+boolean victoire(Joueur j1, Joueur j2)
 {
-    envoiMessageClient(cli_sockfd, "CNT");
-    envoiIntClient(cli_sockfd, player_count);
+    int bateaux1 = 0;
+    int bateaux2 = 0;
+
+    bateaux1 = j1.porte_avions + j1.croiseurs + j1.sous_marins1 + j1.sous_marins2 + j1.torpilleurs;
+    bateaux2 = j2.porte_avions + j2.croiseurs + j2.sous_marins1 + j2.sous_marins2 + j2.torpilleurs;
 
     #ifdef DEBUG
-    printf("[DEBUG] Player Count Sent.\n");
+    printf("[DEBUG] Joueur 1 > bateaux: %d, attaques réussies: %d\n", bateaux1, j1.cibles_touchees);
+    printf("[DEBUG] Joueur 2 > bateaux: %d, attaques réussies: %d\n", bateaux2, j2.cibles_touchees);
     #endif
-}
 
-int victoire(Joueur j1, Joueur j2)
-{
+    if ((bateaux1 == 0) || (j1.cibles_touchees == 17))
+    {
+        printf("Partie terminée: victoire du joueur %d\n", j2.joueur);
 
+        return TRUE;
+    }
+    else if ((bateaux2 == 0) || (j2.cibles_touchees == 17))
+    {
+        printf("Partie terminée: victoire du joueur %d\n", j1.joueur);
+
+        return TRUE;
+    }
+    else
+    {
+        return FALSE;
+    }
 }
 
 /* Checks the board to determine if there is a winner. */
@@ -1138,46 +1134,7 @@ void *run_game(void *thread_data)
     
     Joueur j1 = initialiserJoueur(1);
     Joueur j2 = initialiserJoueur(2);
-
-
-    // Allocation dynamique de la première dimension du tableau 2D: les lignes
-    int **grille1 = (int **) malloc(10 *sizeof(int *));
-    int **grille2 = (int **) malloc(10 *sizeof(int *));
-    int **grille_attaque1 = (int **) malloc(10 *sizeof(int *));
-    int **grille_attaque2 = (int **) malloc(10 *sizeof(int *));
-    int i, j;
-
-    if (grille == NULL)
-    {
-        exit(0);
-    }
-
-    // Suite de l'allocation dynamique: 2nde dimension du tableau: les colonnes
-    for (i = 0; i < 10; i++)
-    {
-        // Allocation du sous-tableau dans la case du premier tableau dynamique
-        grille1[i] = (int *) malloc(10 *sizeof(int));
-        grille2[i] = (int *) malloc(10 *sizeof(int));
-        grille_attaque1[i] = (int *) malloc(10 *sizeof(int));
-        grille_attaque2[i] = (int *) malloc(10 *sizeof(int));
-
-        if (grille[i] == NULL)
-        {
-            printf("Erreur: l'allocation dynamique a échoué\n");
-            exit(0);
-        }
-    }
-
-    for (i = 0; i < 10; i++)
-    {
-        for (j = 0; j < 10; j++)
-        {
-            grille1[i][j] = 0;
-            grille2[i][j] = 0;
-            grille_attaque1[i][j] = 0;
-            grille_attaque2[i][j] = 0;
-        }
-    }
+    Coordonnees attaque;
 
     printf("Début de la partie\n");
     
@@ -1188,19 +1145,28 @@ void *run_game(void *thread_data)
     printf("[DEBUG] Sent start message.\n");
     #endif
 
-    grille1 = recevoirGrille(cli_sockfd[0]);
-    grille_attaque1 = recevoirGrille(cli_sockfd[0]);
-    grille2 = recevoirGrille(cli_sockfd[1]);
-    grille_attaque2 = recevoirGrille(cli_sockfd[1]);
+    j1.grille = recevoirGrille(cli_sockfd[0]);
+    j1.grille_attaque = recevoirGrille(cli_sockfd[0]);
+    j2.grille = recevoirGrille(cli_sockfd[1]);
+    j2.grille_attaque = recevoirGrille(cli_sockfd[1]);
 
-    draw_board(board);
+    envoyerGrille(j1.grille, cli_sockfd[1]);
+    envoyerGrille(j2.grille, cli_sockfd[0]);
+    envoyerGrille(j1.grille_attaque, cli_sockfd[1]);
+    envoyerGrille(j2.grille_attaque, cli_sockfd[0]);
+
+    afficherGrillesJeu(j1.grille, j1.grille_attaque);
+    afficherGrillesJeu(j2.grille, j2.grille_attaque);
     
     int prev_player_turn = 1;
     int player_turn = 0;
-    int game_over = 0;
+    boolean game_over = FALSE;
     int turn_count = 0;
+    boolean touche = FALSE, touche_coule = FALSE, cible_non_faite = FALSE, fin_partie = FALSE;
+    int i = 0;
+    int symbole = 0;
 
-    while(!game_over) 
+    while (game_over == FALSE) 
     {
         /* Tell other player to wait, if necessary. */
         if (prev_player_turn != player_turn)
@@ -1213,55 +1179,61 @@ void *run_game(void *thread_data)
         int move_x = 0;
         int move_y = 0;
 
-        while (!valide) 
-        { 
-            /* We need to keep asking for a move until the player's move is valid. */
-            move_x = get_player_moveX(cli_sockfd[player_turn]);
-            move_y = get_player_moveY(cli_sockfd[player_turn]);
+        attaque = attaqueJoueur(cli_sockfd[player_turn]);
 
-            if (move_x == -1) break; /* Error reading client socket. */
+        if ((attaque.x == -1) || (attaque.y == -1)) break; /* Error reading client socket. */
 
-            printf("Attaque du joueur %d à la position (%d, %d)\n", player_turn, move_x, move_y);
-                
-            valide = check_move(board, move, player_turn);
-            if (!valide) 
-            { 
-                printf("Move was invalid. Let's try this again...\n");
-                write_client_msg(cli_sockfd[player_turn], "INV");
-            }
-        }
+        printf("Attaque du joueur %d à la position (%d, %d)\n", player_turn, attaque.x, attaque.y);
 
-	    if (move == -1) 
-        { /* Error reading from client. */
-            printf("Player disconnected.\n");
+        switch (player_turn)
+        {
+            case 0:
+            afficherGrillesJeu(j1.grille, j1.grille_attaque);
+            break;
+
+            case 1:
+            afficherGrillesJeu(j2.grille, j2.grille_attaque);
+            break;
+
+            default:
             break;
         }
-        else if (move == 9) 
-        { /* Send the client the number of active players. */
-            prev_player_turn = player_turn;
-            send_player_count(cli_sockfd[player_turn]);
+
+        verifierAttaque(j1.grille_attaque, attaque);
+
+	    if ((attaque.x == -1) || (attaque.y == -1))
+        { /* Error reading from client. */
+            printf("Joueur déconnecté.\n");
+            break;
         }
-        else {
+        else 
+        {
             /* Update the board and send the update. */
             update_board(board, move, player_turn);
             send_update( cli_sockfd, move, player_turn );
                 
-            /* Re-draw the board. */
-            draw_board(board);
+            switch (player_turn)
+            {
+                case 0:
+                afficherGrillesJeu(j1.grille, j1.grille_attaque);
+                break;
+
+                case 1:
+                afficherGrillesJeu(j2.grille, j2.grille_attaque);
+                break;
+
+                default:
+                break;
+            }
 
             /* Check for a winner/loser. */
-            game_over = check_board(board, move);
+            game_over = victoire(j1, j2);
             
-            if (game_over == 1) 
+            if (game_over == TRUE) 
             { /* We have a winner. */
-                write_client_msg(cli_sockfd[player_turn], "WIN");
-                write_client_msg(cli_sockfd[(player_turn + 1) % 2], "LSE");
+                envoiMessageClient(cli_sockfd[player_turn], "WIN");
+                envoiMessageClient(cli_sockfd[(player_turn + 1) % 2], "LSE");
                 printf("Fin de partie: victoire du %d.\n", player_turn);
-            }
-            else if (turn_count == 8) { /* There have been nine valid moves and no winner, game is a draw. */
-                printf("Draw.\n");
-                write_clients_msg(cli_sockfd, "DRW");
-                game_over = 1;
             }
 
             /* Move to next player. */
@@ -1273,16 +1245,21 @@ void *run_game(void *thread_data)
 
     printf("Game over.\n");
 
-	/* Close client sockets and decrement player counter. */
+	// Fermer les sockets clients et decrémenter le compteur de joueurs.
     close(cli_sockfd[0]);
     close(cli_sockfd[1]);
 
-    pthread_mutex_lock(&mutexcount);
-    player_count--;
-    printf("Number of players is now %d.", player_count);
-    player_count--;
-    printf("Number of players is now %d.", player_count);
-    pthread_mutex_unlock(&mutexcount);
+    // Synchronisation du nombre de joueurs par mutex: blocage du mutex
+    pthread_mutex_lock(&mutex_nombre_joueurs);
+
+    // Section critique
+    nombre_joueurs--;
+    printf("Number of players is now %d.", nombre_joueurs);
+    nombre_joueurs--;
+    printf("Number of players is now %d.", nombre_joueurs);
+
+    // Fin de la décrémentation: déblocage du mutex
+    pthread_mutex_unlock(&mutex_nombre_joueurs);
     
     free(cli_sockfd);
 
