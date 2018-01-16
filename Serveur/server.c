@@ -454,8 +454,6 @@ void envoyerGrille(int **grille, int sockfd)
                 break;
             }
 
-            buffer[k] = grille[i][j];
-
             #ifdef DEBUG
             printf("%d", buffer[k]);
             #endif
@@ -630,7 +628,6 @@ void recevoirStatistiques(Joueur *joueur, int sockfd)
     joueur->sous_marins2 = receptionInt(sockfd);
     joueur->torpilleurs = receptionInt(sockfd);
     joueur->nombre_bateaux = receptionInt(sockfd);
-
 }
 
 // ==========================================
@@ -1337,14 +1334,17 @@ void *run_game(void *thread_data)
     envoiMessage2Clients(cli_sockfd, "SRT");
 
     #ifdef DEBUG
-    printf("[DEBUG] Sent start message.\n");
+    printf("[DEBUG] Envoi du message start (SRT).\n");
     #endif
 
     j1.grille = recevoirGrille(cli_sockfd[0]);
     j1.grille_attaque = recevoirGrille(cli_sockfd[0]);
     j2.grille = recevoirGrille(cli_sockfd[1]);
     j2.grille_attaque = recevoirGrille(cli_sockfd[1]);
+    recevoirStatistiques(&j1, cli_sockfd[0]);
+    recevoirStatistiques(&j2, cli_sockfd[1]);
 
+    // Chaque joueur va recevoir la grille de son adversaire
     envoyerGrille(j1.grille, cli_sockfd[1]);
     envoyerGrille(j2.grille, cli_sockfd[0]);
     envoyerGrille(j1.grille_attaque, cli_sockfd[1]);
@@ -1480,7 +1480,7 @@ void *run_game(void *thread_data)
         }
     }
 
-    printf("Game over.\n");
+    printf("Fin de partie.\n");
 
 	// Fermer les sockets clients et decrémenter le compteur de joueurs.
     close(cli_sockfd[0]);
@@ -1491,9 +1491,9 @@ void *run_game(void *thread_data)
 
     // Section critique
     nombre_joueurs--;
-    printf("Number of players is now %d.", nombre_joueurs);
+    printf("Joueurs: %d", nombre_joueurs);
     nombre_joueurs--;
-    printf("Number of players is now %d.", nombre_joueurs);
+    printf("Joueurs:  %d.", nombre_joueurs);
 
     // Fin de la décrémentation: déblocage du mutex
     pthread_mutex_unlock(&mutex_nombre_joueurs);

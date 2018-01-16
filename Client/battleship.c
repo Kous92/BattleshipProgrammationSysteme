@@ -274,7 +274,7 @@ int **recevoirGrille(int sockfd)
 	#endif
 
 	char *message;
-	memset(message, 0, 101);
+	memset(message, 0, 100);
 	int n = read(sockfd, message, 100);
 	int i, j, k = 0;
 	int **grille = (int **) malloc(10 *sizeof(int *));
@@ -1511,6 +1511,7 @@ void jeu()
 	placerBateauxAleatoirement(&j1);
 	envoyerGrille(j1.grille, sockfd);
 	envoyerGrille(j1.grille_attaque, sockfd);
+	envoyerStatistiques(j1, sockfd);
 	
 	// Attente pour le démarrage du jeu 
     do 
@@ -1527,11 +1528,7 @@ void jeu()
     j2.grille = recevoirGrille(sockfd);
 	j2.grille_attaque = recevoirGrille(sockfd);
 
-    // printf()
-	tour_joueur = definirJoueurDepart();
-	// afficherGrillesJeu(j1.grille, j1.grille_attaque);
-	// afficherGrillesJeu(j2.grille, j2.grille_attaque);
-	pause();
+    printf("La partie a commencé\n");
 	
 	while (1)
 	{
