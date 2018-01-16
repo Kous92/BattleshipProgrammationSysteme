@@ -68,6 +68,8 @@ void envoiMessage2Clients(int *cli_sockfd, char *message);
 void envoiInt2Clients(int *cli_sockfd, int message);
 void envoyerGrille(int **grille, int sockfd);
 int **recevoirGrille(int sockfd);
+void envoyerStatistiques(Joueur joueur, int sockfd);
+void recevoirStatistiques(Joueur *joueur, int sockfd);
 
 // Connexion
 int definirListenerServeur(int port);

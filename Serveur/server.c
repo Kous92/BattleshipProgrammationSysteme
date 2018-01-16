@@ -382,7 +382,7 @@ void envoyerGrille(int **grille, int sockfd)
 
     for (int i = 0; i < 10; i++)
     {
-        for (int j = 0; j < 10; i++)
+        for (int j = 0; j < 10; j++)
         {
             switch (grille[i][j])
             {
@@ -481,7 +481,7 @@ void envoyerGrille(int **grille, int sockfd)
 int **recevoirGrille(int sockfd)
 {
     char *message;
-    memset(message, 0, 101);
+    memset(message, 0, 100);
     int n = read(sockfd, message, 100);
     int i, j, k = 0;
     int **grille = (int **) malloc(10 *sizeof(int *));
@@ -524,7 +524,7 @@ int **recevoirGrille(int sockfd)
 
     for (i = 0; i < 10; i++)
     {
-        for (j = 0; j < 10; i++)
+        for (j = 0; j < 10; j++)
         {
             switch (message[k])
             {
@@ -592,7 +592,7 @@ int **recevoirGrille(int sockfd)
                 break;
 
                 default:
-                grille[i][j] = -3;
+                grille[i][j] = 0;
                 break;
             }
 
@@ -609,6 +609,28 @@ int **recevoirGrille(int sockfd)
     #endif
 
     return grille;
+}
+
+void envoyerStatistiques(Joueur joueur, int sockfd)
+{
+    envoiIntClient(sockfd, joueur.porte_avions);
+    envoiIntClient(sockfd, joueur.croiseurs);
+    envoiIntClient(sockfd, joueur.sous_marins1);
+    envoiIntClient(sockfd, joueur.sous_marins2);
+    envoiIntClient(sockfd, joueur.torpilleurs);
+    envoiIntClient(sockfd, joueur.nombre_bateaux);
+
+}
+
+void recevoirStatistiques(Joueur *joueur, int sockfd)
+{
+    joueur->porte_avions = receptionInt(sockfd);
+    joueur->croiseurs = receptionInt(sockfd);
+    joueur->sous_marins1 = receptionInt(sockfd);
+    joueur->sous_marins2 = receptionInt(sockfd);
+    joueur->torpilleurs = receptionInt(sockfd);
+    joueur->nombre_bateaux = receptionInt(sockfd);
+
 }
 
 // ==========================================

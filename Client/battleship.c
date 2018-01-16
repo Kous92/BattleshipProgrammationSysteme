@@ -166,12 +166,13 @@ void envoyerGrille(int **grille, int sockfd)
 	char buffer[100];
 
 	#ifdef DEBUG
+	printf("Envoi de la grille au serveur\n");
 	printf("[DEBUG] Grille: ");
 	#endif
 
-	for (int i = 0; i < 10; i++)
+	for (i = 0; i < 10; i++)
 	{
-		for (int j = 0; j < 10; i++)
+		for (j = 0; j < 10; j++)
 		{
 			switch (grille[i][j])
 			{
@@ -243,10 +244,9 @@ void envoyerGrille(int **grille, int sockfd)
 				break;
 			}
 
-			buffer[k] = grille[i][j];
 
 			#ifdef DEBUG
-			printf("%d", buffer[k]);
+			printf("%c", buffer[k]);
 			#endif
 
 			k++;
@@ -263,12 +263,16 @@ void envoyerGrille(int **grille, int sockfd)
 
 	if (n < 0)
 	{
-		erreur("ERREUR: L'envoi du message au socket client a échoué");
+		erreur("ERREUR: L'envoi du message au socket serveur a échoué");
 	}
 }
 
 int **recevoirGrille(int sockfd)
 {
+	#ifdef DEBUG
+	printf("[DEBUG] Réception de la grille...\n");
+	#endif
+
 	char *message;
 	memset(message, 0, 101);
 	int n = read(sockfd, message, 100);
@@ -303,6 +307,10 @@ int **recevoirGrille(int sockfd)
 
 	if ((n < 0) || (n != 100))
 	{
+		#ifdef DEBUG
+		printf("n = %d\n", n);
+		#endif
+
 		erreur("ERREUR: Échec de la réception du message envoyé du serveur");
 	}
 
@@ -313,7 +321,7 @@ int **recevoirGrille(int sockfd)
 
     for (i = 0; i < 10; i++)
 	{
-		for (j = 0; j < 10; i++)
+		for (j = 0; j < 10; j++)
 		{
 			switch (message[k])
 			{
@@ -381,7 +389,7 @@ int **recevoirGrille(int sockfd)
 				break;
 
 				default:
-				grille[i][j] = -3;
+				grille[i][j] = 0;
 				break;
 			}
 
@@ -402,11 +410,23 @@ int **recevoirGrille(int sockfd)
 
 void envoyerStatistiques(Joueur joueur, int sockfd)
 {
+	envoyerInt(sockfd, joueur.porte_avions);
+	envoyerInt(sockfd, joueur.croiseurs);
+	envoyerInt(sockfd, joueur.sous_marins1);
+	envoyerInt(sockfd, joueur.sous_marins2);
+	envoyerInt(sockfd, joueur.torpilleurs);
+	envoyerInt(sockfd, joueur.nombre_bateaux);
 
 }
 
 void recevoirStatistiques(Joueur *joueur, int sockfd)
 {
+	joueur->porte_avions = receptionInt(sockfd);
+	joueur->croiseurs = receptionInt(sockfd);
+	joueur->sous_marins1 = receptionInt(sockfd);
+	joueur->sous_marins2 = receptionInt(sockfd);
+	joueur->torpilleurs = receptionInt(sockfd);
+	joueur->nombre_bateaux = receptionInt(sockfd);
 
 }
 
@@ -1096,8 +1116,7 @@ void afficherStatistiquesJoueur(Joueur j1, Joueur j2)
 	else
 	{
 		printf("-> ATTENTION: Il ne vous reste plus qu'un seul bateau\n");
-	}
-	
+	}	
 }
 
 void mettreAJourBateauxJoueur(Joueur *joueur, Coordonnees position, int *symbole)
@@ -1492,8 +1511,6 @@ void jeu()
 	placerBateauxAleatoirement(&j1);
 	envoyerGrille(j1.grille, sockfd);
 	envoyerGrille(j1.grille_attaque, sockfd);
-	j2.grille = recevoirGrille(sockfd);
-	j2.grille_attaque = recevoirGrille(sockfd);
 	
 	// Attente pour le démarrage du jeu 
     do 
@@ -1506,6 +1523,9 @@ void jeu()
         }
 
     } while (strcmp(msg, "SRT"));
+
+    j2.grille = recevoirGrille(sockfd);
+	j2.grille_attaque = recevoirGrille(sockfd);
 
     // printf()
 	tour_joueur = definirJoueurDepart();
@@ -1588,8 +1608,7 @@ void jeu()
 	        else if (!strcmp(msg, "UPD")) 
 	        {
 	            /* Server is sending a game board update. */
-	            
-	    
+	              
 	        }
 	        else if (!strcmp(msg, "WAT")) 
 	        { /* Wait for other player to take a turn. */
@@ -1610,6 +1629,7 @@ void jeu()
             	erreur("Erreur inconnue.");
         	}	
 
+        	/*
 			switch (tour_joueur)
 			{
 				case 1:
@@ -1724,7 +1744,7 @@ void jeu()
 
 				default:
 				break;
-			}
+			} */
 		}
 		
 		pause();
