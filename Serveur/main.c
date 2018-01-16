@@ -12,42 +12,45 @@
 
 int main(int argc, char *argv[])
 {   
-    int player_count = 0;
-    pthread_mutex_t mutexcount;
+    int nombre_joueurs = 0;
+    pthread_mutex_t mutex_compteur;
 
-    /* Make sure a port was specified. */
-    if (argc < 2) {
+    // On s'assure qu'un port est renseigné
+    if (argc < 2) 
+    {
         fprintf(stderr,"ERREUR: Aucun port renseigné\n");
         exit(1);
     }
 
-    int lis_sockfd = definirListenerServeur(atoi(argv[1])); /* Listener socket. */
-    pthread_mutex_init(&mutexcount, NULL);
+    int lis_sockfd = definirListenerServeur(atoi(argv[1])); // Socket listener
+    pthread_mutex_init(&mutex_compteur, NULL);
 
     printf(">>> SERVEUR BATAILLE NAVALE LANCÉ\n");
 
     while (1) 
     {
         // Ici, le serveur peut gérer jusqu'à 126 salons
-        if (player_count <= 252) 
+        if (nombre_joueurs <= 252) 
         { 
             // Une nouvelle partie se lance si on a un salon de 2 joueurs. Sinon, laisser tourner  
-            int *cli_sockfd = (int *) malloc(2 *sizeof(int)); // Sockets client
+            int *cli_sockfd = (int *) malloc(2 *sizeof(int)); // Sockets clients
             memset(cli_sockfd, 0, 2 *sizeof(int));
             
-            /* Get two clients connected. */
+            // Recevoir la connexion de 2 clients
             recevoirClients(lis_sockfd, cli_sockfd);
             
             #ifdef DEBUG
             printf("[DEBUG] Démarrage d'un nouveau thread de jeu...\n");
             #endif
 
-            pthread_t thread; /* Don't really need the thread id for anything in this case, but here it is anyway. */
-            int result = pthread_create(&thread, NULL, run_game, (void *)cli_sockfd); /* Start a new thread for this game. */
+            pthread_t thread;
 
-            if (result)
+            // Lancer un nouveau thread, un salon de jeu entre 2 joueurs
+            int resultat = pthread_create(&thread, NULL, lancerJeu, (void *)cli_sockfd);
+
+            if (resultat)
             {
-                printf("Échec de la création du thread avec le code d'erreur %d\n", result);
+                printf("Échec de la création du thread avec le code d'erreur %d\n", resultat);
                 exit(-1);
             }
             
@@ -57,8 +60,8 @@ int main(int argc, char *argv[])
         }
     }
 
-    close(lis_sockfd);
+    close(lis_sockfd); // Fermeture du socket serveur
 
-    pthread_mutex_destroy(&mutexcount);
+    pthread_mutex_destroy(&mutex_compteur);
     pthread_exit(NULL); 
 }

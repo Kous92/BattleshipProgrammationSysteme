@@ -76,7 +76,6 @@ typedef struct Grille
 // Fonction de mise en pause
 void pause();
 void viderBuffer();
-void error(const char *msg);
 
 // Gestion de la grille
 int **initialiserGrille();

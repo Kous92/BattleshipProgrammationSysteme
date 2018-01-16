@@ -1541,7 +1541,7 @@ void jeu()
 		{   
 			if (!strcmp(msg, "TRN")) 
 			{ 
-				/* Take a turn. */
+				// Jouer son tour
 		        printf("Votre tour...\n");
 
 		        afficherGrillesJeu(j1.grille, j1.grille_attaque);
@@ -1598,17 +1598,18 @@ void jeu()
 				}
        		}
 	        else if (!strcmp(msg, "CNT")) 
-	        { /* Server is sending the number of active players. Note that a "TRN" message will always follow a "CNT" message. */
-	            int num_players = receptionInt(sockfd);
-	            printf("There are currently %d active players.\n", num_players); 
+	        {
+	            int nombre_joueurs = receptionInt(sockfd);
+	            printf("Il y a actuellement %d joueurs actifs.\n", nombre_joueurs); 
 	        }
 	        else if (!strcmp(msg, "UPD")) 
 	        {
-	            /* Server is sending a game board update. */
+	            // Le serveur envoie une mise à jour
 	              
 	        }
 	        else if (!strcmp(msg, "WAT")) 
-	        { /* Wait for other player to take a turn. */
+	        { 
+	        	// En attente de l'autre joueur qui joue son tour
 	            printf("En attente de l'attaque de votre adversaire...\n");
 	        }
 	        else if (!strcmp(msg, "WIN")) // Gagnant

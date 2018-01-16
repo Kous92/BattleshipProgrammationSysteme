@@ -85,13 +85,9 @@ int nombreAttaqueSurBateaux(boolean *degats, int longueur_bateau);
 boolean verifierToucheCoule(Joueur *joueur, int symbole);
 boolean verifierGrilleAttaque(int **grille_attaque, Coordonnees attaque);
 boolean victoire(Joueur j1, Joueur j2);
-int check_move(char board[][3], int move, int player_id);
-void update_board(char board[][3], int move, int player_id);
-void draw_board(char board[][3]);
 void envoyerMiseAJour(int *cli_sockfd, int attaqueX, int attaqueY, int id_joueur);
-int check_board(char board[][3], int last_move);
 
 // Thread de jeu
-void *run_game(void *thread_data);
+void *lancerJeu(void *donnees_thread);
 
 #endif

@@ -1,55 +1,35 @@
-#include <pthread.h>
+#include "battleship.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <sys/types.h> 
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include "server.h"
+#include <time.h>
 
-#define DEBUG
+int main(void)
+{
+	system("clear");
 
-int main(int argc, char *argv[])
-{   
-    /* Make sure a port was specified. */
-    if (argc < 2) {
-        fprintf(stderr,"ERROR, no port provided\n");
-        exit(1);
-    }
-    
-    int lis_sockfd = setup_listener(atoi(argv[1])); /* Listener socket. */
-    pthread_mutex_init(&mutexcount, NULL);
+	Coordonnees attaque;
+	boolean touche = FALSE;
 
-    while (1) 
-    {
-        if (player_count <= 252) 
-        { /* Only launch a new game if we have room. Otherwise, just spin. */  
-            int *cli_sockfd = (int *)malloc(2*sizeof(int)); /* Client sockets */
-            memset(cli_sockfd, 0, 2*sizeof(int));
-            
-            /* Get two clients connected. */
-            get_clients(lis_sockfd, cli_sockfd);
-            
-            #ifdef DEBUG
-            printf("[DEBUG] Starting new game thread...\n");
-            #endif
+	int i = 0;
+	jeu();
+	// afficherGrillesJeu(j1.grille, j1.grille_attaque);
 
-            pthread_t thread; /* Don't really need the thread id for anything in this case, but here it is anyway. */
-            int result = pthread_create(&thread, NULL, run_game, (void *)cli_sockfd); /* Start a new thread for this game. */
-            if (result){
-                printf("Thread creation failed with return code %d\n", result);
-                exit(-1);
-            }
-            
-            #ifdef DEBUG
-            printf("[DEBUG] New game thread started.\n");
-            #endif
-        }
-    }
+	// j1.grille = placerBateauxAleatoirement(j1.bateaux, j1.grille);
+	// afficherGrillesJeu(j1.grille, j1.grille_attaque);
+	// afficherStatistiquesJoueur(j1);
 
-    close(lis_sockfd);
+	/*
+	while (i < 3)
+	{
+		attaque = definirCible();
+		i++;
 
-    pthread_mutex_destroy(&mutexcount);
-    pthread_exit(NULL); 
+		touche = verifierAttaque(j1.grille, attaque);
+		j1.grille_attaque = mettreAJourGrille(j1.grille_attaque, attaque, touche);
+
+		afficherGrillesJeu(j1.grille, j1.grille_attaque);
+	}
+	*/
+
+	return 0;
 }

@@ -35,17 +35,6 @@ void viderBuffer()
     }
 }
 
-void error(const char *msg)
-{
-    #ifdef DEBUG
-    perror(msg);
-    #else
-    printf("ERREUR: Serveur arrêté ou déconnexion de l'autre joueur.\nGAME OVER.\n");
-    #endif 
-
-    exit(0);
-}
-
 int **initialiserGrille()
 {
 	// Allocation dynamique de la première dimension du tableau 2D: les lignes

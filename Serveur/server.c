@@ -666,7 +666,7 @@ int definirListenerServeur(int port)
     printf("[DEBUG] Listener défini, serveur lancé.\n");    
     #endif 
 
-    /* Return the socket number. */
+    // Retourner le numéro de socket
     return sockfd;
 }
 
@@ -1274,55 +1274,10 @@ boolean victoire(Joueur j1, Joueur j2)
     }
 }
 
-/* Checks the board to determine if there is a winner. */
-int check_board(char board[][3], int last_move)
+// Lancer une partie en réseau entre 2 joueur
+void *lancerJeu(void *donnees_thread) 
 {
-    #ifdef DEBUG
-    printf("[DEBUG] Checking for a winner...\n");
-    #endif
-   
-    int row = last_move/3;
-    int col = last_move%3;
-
-    if ( board[row][0] == board[row][1] && board[row][1] == board[row][2] ) { /* Check the row for a win. */
-        #ifdef DEBUG
-        printf("[DEBUG] Win by row %d.\n", row);
-        #endif 
-        return 1;
-    }
-    else if ( board[0][col] == board[1][col] && board[1][col] == board[2][col] ) { /* Check the column for a win. */
-        #ifdef DEBUG
-        printf("[DEBUG] Win by column %d.\n", col);
-        #endif 
-        return 1;
-    }
-    else if (!(last_move % 2)) { /* If the last move was at an even numbered position we have to check the diagonal(s) as well. */
-        if ( (last_move == 0 || last_move == 4 || last_move == 8) && (board[1][1] == board[0][0] && board[1][1] == board[2][2]) ) {  /* Check backslash diagonal. */
-            #ifdef DEBUG
-            printf("[DEBUG] Win by backslash diagonal.\n");
-            #endif 
-            return 1;
-        }
-        if ( (last_move == 2 || last_move == 4 || last_move == 6) && (board[1][1] == board[0][2] && board[1][1] == board[2][0]) ) { /* Check frontslash diagonal. */
-            #ifdef DEBUG
-            printf("[DEBUG] Win by frontslash diagonal.\n");
-            #endif 
-            return 1;
-        }
-    }
-
-    #ifdef DEBUG
-    printf("[DEBUG] No winner, yet.\n");
-    #endif
-    
-    /* No winner, yet. */
-    return 0;
-}
-
-/* Runs a game between two clients. */
-void *run_game(void *thread_data) 
-{
-    int *cli_sockfd = (int *)thread_data; // Sockets clients. */
+    int *cli_sockfd = (int *)donnees_thread; // Sockets clients.
     
     Joueur j1 = initialiserJoueur(1);
     Joueur j2 = initialiserJoueur(2);
@@ -1463,17 +1418,18 @@ void *run_game(void *thread_data)
                 break;
             }
 
-            /* Check for a winner/loser. */
+            // Vérification de la fin de partie
             game_over = victoire(j1, j2);
             
             if (game_over == TRUE) 
-            { /* We have a winner. */
+            { 
+                // Nous avons un vainqueur
                 envoiMessageClient(cli_sockfd[player_turn], "WIN");
                 envoiMessageClient(cli_sockfd[(player_turn + 1) % 2], "LSE");
                 printf("Fin de partie: victoire du %d.\n", player_turn);
             }
 
-            /* Move to next player. */
+            // Changement de joueur
             prev_player_turn = player_turn;
             player_turn = (player_turn + 1) % 2;
             turn_count++;
