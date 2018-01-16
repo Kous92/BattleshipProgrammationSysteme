@@ -53,12 +53,6 @@ typedef struct Joueur
 	int cibles_touchees;
 } Joueur;
 
-typedef struct Grille
-{
-	int symbole;
-	Coordonnees position;
-} Grille;
-
 // Fonction de mise en pause
 // void pause();
 void viderBuffer();

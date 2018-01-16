@@ -410,27 +410,6 @@ void recevoirStatistiques(Joueur *joueur, int sockfd)
 
 }
 
-/* Changer le tour du serveur turn and sends it to the server. */
-void jouerTour(int sockfd)
-{
-    char buffer[10];
-    
-    while (1) 
-    { /* Ask until we receive. */ 
-        printf("Enter 0-8 to make a move, or 9 for number of active players: ");
-	    fgets(buffer, 10, stdin);
-	    int move = buffer[0] - '0';
-        if (move <= 9 && move >= 0){
-            printf("\n");
-            /* Send players move to the server. */
-            write_server_int(sockfd, move);   
-            break;
-        } 
-        else
-            printf("\nInvalid input. Try again.\n");
-    }
-}
-
 int **initialiserGrille()
 {
 	// Allocation dynamique de la première dimension du tableau 2D: les lignes
@@ -917,7 +896,6 @@ boolean validerPlacementBateaux(int **grille, Coordonnees position, int directio
 {
 	int i;
 	boolean valide = TRUE;
-	Symbole symbole;
 
 	// printf("Validation...");
 
@@ -1585,7 +1563,7 @@ void jeu()
 
 				touche = verifierAttaque(j2.grille, attaque);
 				j1.grille_attaque = mettreAJourGrille(j1.grille_attaque, attaque, touche);
-				envoyerGrille(j1.grille_attaque);
+				envoyerGrille(j1.grille_attaque, sockfd);
 				
 				if (touche == TRUE)
 				{
@@ -1610,29 +1588,27 @@ void jeu()
 	        else if (!strcmp(msg, "UPD")) 
 	        {
 	            /* Server is sending a game board update. */
-	            get_update(sockfd, board);
-	            draw_board(board);
+	            
+	    
 	        }
 	        else if (!strcmp(msg, "WAT")) 
 	        { /* Wait for other player to take a turn. */
 	            printf("En attente de l'attaque de votre adversaire...\n");
 	        }
-	        else if (!strcmp(msg, "WIN")) 
-	        { /* Winner. */
-	            printf("You win!\n");
+	        else if (!strcmp(msg, "WIN")) // Gagnant
+	        {
+	            printf("Fin de partie, vous avez gagné !\n");
 	            break;
 	        }
-	        else if (!strcmp(msg, "LSE")) { /* Loser. */
-	            printf("You lost.\n");
+	        else if (!strcmp(msg, "LSE")) // Perdant
+	        { 
+	            printf("Fin de partie, vous avez perdu.\n");
 	            break;
 	        }
-	        else if (!strcmp(msg, "DRW")) 
-	        { /* Game is a draw. */
-	            printf("Draw.\n");
-	            break;
-	        }
-	        else /* Weird... */
-            error("Erreur inconnue.");
+	        else // Cas anormal
+	        {
+            	erreur("Erreur inconnue.");
+        	}	
 
 			switch (tour_joueur)
 			{

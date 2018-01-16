@@ -871,6 +871,54 @@ int **mettreAJourGrilleBateauTouche(int **grille, Coordonnees cible, int symbole
     return grille;
 }
 
+void mettreAJourBateauxJoueur(Joueur *joueur, Coordonnees position, int *symbole)
+{
+    int i, j;
+    int attaques_restantes = 0;
+    boolean case_verifiee = FALSE;
+
+    for (i = 0; i < joueur->nombre_bateaux; i++)
+    {
+        for (j = 0; j < joueur->bateaux[i].longueur_bateau; j++)
+        {   
+            // Bateau touché
+            if ((joueur->bateaux[i].coordonnees[j].x == (position.x - 1)) && (joueur->bateaux[i].coordonnees[j].y == (position.y - 1)))
+            {
+                printf("%s ennemi touché", joueur->bateaux[i].nom);
+                
+                if (case_verifiee == FALSE)
+                {
+                    joueur->bateaux[i].degats[j] = TRUE;
+                }
+                
+                attaques_restantes = joueur->bateaux[i].longueur_bateau - nombreAttaqueSurBateaux(joueur->bateaux[i].degats, joueur->bateaux[i].longueur_bateau);
+                
+                if (attaques_restantes == 0)
+                {
+                    printf(" -> détruit\n");
+                } 
+                else
+                {
+                    printf(" -> Encore %d fois pour détruire le %s\n", attaques_restantes, joueur->bateaux[i].nom);
+                    printf("\n");
+                }
+
+                if (case_verifiee == FALSE)
+                {
+                    *symbole = joueur->grille[position.x - 1][position.y - 1];
+                    case_verifiee = TRUE;
+
+                    #ifdef DEBUG
+                    printf("[DEBUG] Symbole reconnu: %d\n", joueur->grille[position.x - 1][position.y - 1]);
+                    #endif
+
+
+                }
+            }
+        }   
+    }
+}
+
 // Dessiner les grilles dans stdout
 void afficherGrillesJeu(int **grille, int **grille_attaque)
 {
@@ -1051,6 +1099,131 @@ void envoyerMiseAJour(int *cli_sockfd, int attaqueX, int attaqueY, int id_joueur
     #endif
 }
 
+int nombreAttaqueSurBateaux(boolean *degats, int longueur_bateau)
+{
+    int i;
+    int n = 0;
+
+    for (i = 0; i < longueur_bateau; i++)
+    {
+        if (degats[i] == TRUE)
+        {
+            #ifdef DEBUG1
+            printf("[DEBUG] %d + 1\n", n);
+            #endif
+
+            n++;
+        }
+    }
+
+    return n;
+}
+
+boolean verifierToucheCoule(Joueur *joueur, int symbole)
+{
+    int i, k;
+    int attaques_restantes = 0;
+    int total_degats = 0;
+    int bateaux_detruits = 0;
+    boolean ok = FALSE;
+
+    for (i = 0; i < joueur->nombre_bateaux; i++)
+    {
+        total_degats = nombreAttaqueSurBateaux(joueur->bateaux[i].degats, joueur->bateaux[i].longueur_bateau);
+        attaques_restantes = joueur->bateaux[i].longueur_bateau - total_degats;
+
+        #ifdef DEBUG
+        printf("[DEBUG] Vérification du bateau %d (%s)... Dégâts: %d / %d\n", (i + 1), joueur->bateaux[i].nom, nombreAttaqueSurBateaux(joueur->bateaux[i].degats, joueur->bateaux[i].longueur_bateau), joueur->bateaux[i].longueur_bateau);
+        #endif
+
+        boolean ok = FALSE;
+
+        if ((total_degats == joueur->bateaux[i].longueur_bateau) && (joueur->bateaux[i].symbole == symbole))
+        {
+            if ((joueur->bateaux[i].symbole == 1) && (strcmp(joueur->bateaux[i].nom, "Porte-avions") == 0) && (joueur->porte_avions > 0))
+            {
+                joueur->porte_avions--;
+                ok = TRUE;
+                printf("Touché coulé pour le %s\n", joueur->bateaux[i].nom);
+                // joueur->nombre_bateaux--;
+            }   
+
+            if ((joueur->bateaux[i].symbole == 2) && (strcmp(joueur->bateaux[i].nom, "Croiseur") == 0) && (joueur->croiseurs > 0))
+            {
+                joueur->croiseurs--;
+                ok = TRUE;
+                printf("Touché coulé pour le %s\n", joueur->bateaux[i].nom);
+                // joueur->nombre_bateaux--;
+            }   
+
+            if ((joueur->bateaux[i].symbole == 3) && (strcmp(joueur->bateaux[i].nom, "Sous-marin 1") == 0) && (joueur->sous_marins1 > 0))
+            {
+                joueur->sous_marins1--;
+                ok = TRUE;
+                printf("Touché coulé pour le %s\n", joueur->bateaux[i].nom);
+                // joueur->nombre_bateaux--;
+            }   
+
+            if ((joueur->bateaux[i].symbole == 4) && (strcmp(joueur->bateaux[i].nom, "Sous-marin 2") == 0) && (joueur->sous_marins2 > 0))
+            {
+                joueur->sous_marins2--;
+                ok = TRUE;
+                printf("Touché coulé pour le %s\n", joueur->bateaux[i].nom);
+                // joueur->nombre_bateaux--;
+            }
+
+            if ((joueur->bateaux[i].symbole == 5) && (strcmp(joueur->bateaux[i].nom, "Torpilleur") == 0) && (joueur->torpilleurs > 0))
+            {
+                joueur->torpilleurs--;
+                ok = TRUE;
+                printf("Touché coulé pour le %s\n", joueur->bateaux[i].nom);
+                // joueur->nombre_bateaux--;
+            }
+        }
+        else
+        {
+            #ifdef DEBUG
+            printf(" -> Encore %d fois pour détruire le %s\n", attaques_restantes, joueur->bateaux[i].nom);
+
+            printf("[DEBUG] Dégâts (bateau longueur %d): ", joueur->bateaux[i].longueur_bateau);
+
+            for (k = 0; k < joueur->bateaux[i].longueur_bateau; k++)
+            {   
+                printf("%d ", joueur->bateaux[i].degats[k]);
+            }
+
+            printf("\n");
+
+            #endif
+        }   
+    }
+
+    return ok;
+}
+
+boolean verifierGrilleAttaque(int **grille_attaque, Coordonnees attaque)
+{
+    boolean cible_non_faite = FALSE;
+
+    switch (grille_attaque[attaque.x - 1][attaque.y - 1])
+    {
+        case 0:
+        cible_non_faite = TRUE;
+        break;
+
+        case -1:
+        case -2:
+        cible_non_faite = FALSE;
+        break;
+
+        default:
+        cible_non_faite = FALSE;
+        break;
+    }
+
+    return cible_non_faite;
+}
+
 boolean victoire(Joueur j1, Joueur j2)
 {
     int bateaux1 = 0;
@@ -1199,7 +1372,7 @@ void *run_game(void *thread_data)
             break;
         }
 
-        verifierAttaque(j1.grille_attaque, attaque);
+        touche = verifierAttaque(j1.grille_attaque, attaque);
 
 	    if ((attaque.x == -1) || (attaque.y == -1))
         { /* Error reading from client. */
@@ -1208,9 +1381,51 @@ void *run_game(void *thread_data)
         }
         else 
         {
-            /* Update the board and send the update. */
-            update_board(board, move, player_turn);
-            send_update( cli_sockfd, move, player_turn );
+            // Mettre à jour la grille et envoyer la mise à jour
+            switch (player_turn)
+            {
+                case 0:
+                mettreAJourGrille(j1.grille_attaque, attaque, touche);
+
+                if (touche == TRUE)
+                {
+                    j1.cibles_touchees++;
+                    mettreAJourBateauxJoueur(&j2, attaque, &symbole);
+
+                    #ifdef DEBUG
+                    printf("[DEBUG] Symbole cible touchée: %d\n", symbole);
+                    #endif
+
+                    j2.grille = mettreAJourGrilleBateauTouche(j2.grille, attaque, symbole);
+
+                    touche_coule = verifierToucheCoule(&j2, symbole);
+                }
+
+                break;
+
+                case 1:
+                mettreAJourGrille(j2.grille_attaque, attaque, touche);
+
+                if (touche == TRUE)
+                {
+                    j2.cibles_touchees++;
+                    mettreAJourBateauxJoueur(&j1, attaque, &symbole);
+
+                    #ifdef DEBUG
+                    printf("[DEBUG] Symbole cible touchée: %d\n", symbole);
+                    #endif
+
+                    j1.grille = mettreAJourGrilleBateauTouche(j1.grille, attaque, symbole);
+
+                    touche_coule = verifierToucheCoule(&j1, symbole);
+                }
+                break;
+
+                default:
+                break;
+            }
+
+            envoyerMiseAJour(cli_sockfd, attaque.x, attaque.y, player_turn);
                 
             switch (player_turn)
             {

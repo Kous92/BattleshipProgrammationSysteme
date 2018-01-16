@@ -20,8 +20,8 @@ int main(int argc, char *argv[])
         fprintf(stderr,"ERREUR: Aucun port renseigné\n");
         exit(1);
     }
-    
-    int lis_sockfd = (atoi(argv[1])); /* Listener socket. */
+
+    int lis_sockfd = definirListenerServeur(atoi(argv[1])); /* Listener socket. */
     pthread_mutex_init(&mutexcount, NULL);
 
     printf(">>> SERVEUR BATAILLE NAVALE LANCÉ\n");
